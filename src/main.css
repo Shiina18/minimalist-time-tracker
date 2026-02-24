@@ -1,0 +1,71 @@
+:root {
+  --bg: #0f0f12;
+  --surface: #1a1a1f;
+  --border: #2a2a32;
+  --text: #e8e8ec;
+  --text-muted: #8888a0;
+  --accent: #7c6ef6;
+  --accent-hover: #9185f8;
+  --danger: #e85d5d;
+  --success: #5dce8a;
+  --radius: 12px;
+  --touch-min: 48px;
+  --font-sans: system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+/* 数字等宽，避免时长/日期等数字跳动 */
+.stat-value,
+.week-chart-duration,
+.week-chart-seg-text,
+.week-total-duration,
+.week-total-percent,
+.cell-duration,
+.project-duration,
+.session-duration,
+.timer-value,
+.duration {
+  font-variant-numeric: tabular-nums;
+}
