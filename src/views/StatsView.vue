@@ -173,6 +173,10 @@
           <span class="stat-value">{{ recordDays }}</span>
           <span class="stat-label"> 记录天数</span>
         </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ formatDurationShort(monthAvgPerDayMs) }}</span>
+          <span class="stat-label"> 平均每天</span>
+        </div>
         <div class="stat-item stat-item-total">
           <span class="stat-value">{{ formatDurationShort(totalMs) }}</span>
           <span class="stat-label"> 总时长</span>
@@ -514,6 +518,31 @@ const totalMs = computed(() => {
 
 const recordDays = computed(() => {
   return Object.values(dailyByMonth.value).filter((ms) => ms > 0).length
+})
+
+/** 该月第一次有记录的日期（YYYY-MM-DD），无记录为 null */
+const monthFirstRecordDateKey = computed(() => {
+  const daily = dailyByMonth.value
+  const keys = Object.entries(daily)
+    .filter(([, ms]) => ms > 0)
+    .map(([k]) => k)
+  return keys.length ? keys.sort()[0] : null
+})
+
+/** 平均每天的分母：从该月第一次有记录日期到今日的天数（至少 1） */
+const monthAvgPerDayDenom = computed(() => {
+  const firstKey = monthFirstRecordDateKey.value
+  if (!firstKey) return 0
+  const [y, m, d] = firstKey.split('-').map(Number)
+  const start = new Date(y, m - 1, d).getTime()
+  const end = new Date(now.value.getFullYear(), now.value.getMonth(), now.value.getDate(), 23, 59, 59, 999).getTime()
+  const dayMs = 24 * 60 * 60 * 1000
+  return Math.max(1, Math.ceil((end - start) / dayMs))
+})
+
+const monthAvgPerDayMs = computed(() => {
+  const n = monthAvgPerDayDenom.value
+  return n > 0 ? Math.round(totalMs.value / n) : 0
 })
 
 const yearTotalMs = computed(() => {
