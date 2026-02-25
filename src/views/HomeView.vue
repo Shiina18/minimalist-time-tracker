@@ -218,7 +218,12 @@ async function loadActive() {
 }
 
 function startEditNote() {
-  noteValue.value = (activeSession.value?.note ?? '').trim()
+  const existing = (activeSession.value?.note ?? '').trim()
+  if (!existing && currentProjectName.value) {
+    noteValue.value = `[${currentProjectName.value}] `
+  } else {
+    noteValue.value = existing
+  }
   noteEditing.value = true
   nextTick(() => noteInputRef.value?.focus())
 }
