@@ -43,32 +43,29 @@
             @keydown.enter="onNoteEnter"
           />
         </div>
-      <div class="actions">
-        <button type="button" class="btn btn-end" @click="endSession">结束</button>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="togglePause"
-        >
-          {{ pausedAt ? '继续' : '暂停' }}
-        </button>
-        <div class="project-actions">
-          <button type="button" class="btn btn-secondary" @click="openPicker">
-            {{ currentProjectName ? '切换项目' : '选择项目' }}
-          </button>
+        <div class="actions">
+          <button type="button" class="btn btn-end" @click="endSession">结束</button>
           <button
-            v-if="currentProjectName"
             type="button"
-            class="btn btn-secondary btn-end-project"
-            @click="endCurrentProject"
+            class="btn btn-secondary"
+            @click="togglePause"
           >
-            结束当前项目
+            {{ pausedAt ? '继续' : '暂停' }}
           </button>
+          <div class="project-actions">
+            <button type="button" class="btn btn-secondary" @click="openPicker">
+              {{ currentProjectName ? '切换项目' : '选择项目' }}
+            </button>
+            <button
+              v-if="currentProjectName"
+              type="button"
+              class="btn btn-secondary btn-end-project"
+              @click="endCurrentProject"
+            >
+              结束当前项目
+            </button>
+          </div>
         </div>
-      </div>
-      </div>
-      <div v-if="toastMessage" class="toast">
-        {{ toastMessage }}
       </div>
       <ProjectPicker
         :open="showPicker"
@@ -76,6 +73,9 @@
         @select="onSelectProject"
       />
     </template>
+    <div v-if="toastMessage" class="toast">
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
@@ -152,12 +152,12 @@ async function closeSegmentWithThreeMinuteRule(seg, endAt, { emitToast = true } 
   if (unclassified && dur < MIN_UNCLASSIFIED_MS) {
     await deleteSegment(seg.id)
     if (emitToast) {
-      showToast('未归类且不足 3 分钟的一段已丢弃, 避免产生碎片')
+      showToast('已丢弃不足三分钟的片段')
     }
   } else if (dur < MIN_DURATION_MS) {
     await updateSegment(seg.id, { projectId: null })
     if (emitToast) {
-      showToast('不足 3 分钟的一段已归为未归类')
+      showToast('已丢弃不足三分钟的片段')
     }
   }
 }
@@ -291,7 +291,7 @@ async function endSession() {
   const sessionDur = now - session.startAt
   if (sessionDur < MIN_DURATION_MS) {
     await deleteSession(session.id)
-    showToast('整次记录不足 3 分钟，未保存')
+    showToast('已丢弃不足三分钟的记录')
   } else {
     await setSessionEnd(session.id, now)
   }
