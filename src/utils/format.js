@@ -22,6 +22,11 @@ export function formatDurationShort(ms) {
   return `${h.toFixed(1)} h`
 }
 
+/** 仅分钟数（四舍五入），用于柱状图等节约空间，不写单位，统一视为 min */
+export function formatDurationMinutes(ms) {
+  return Math.round(ms / 60000)
+}
+
 /** 日期 YYYY-MM-DD */
 export function formatDate(ts) {
   const d = new Date(ts)

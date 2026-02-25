@@ -4,10 +4,11 @@
       <RouterView />
     </main>
     <nav class="nav">
-      <RouterLink to="/record" class="nav-link" active-class="active">记录</RouterLink>
-      <RouterLink to="/sessions" class="nav-link" active-class="active">历史记录</RouterLink>
-      <RouterLink to="/projects" class="nav-link" active-class="active">子项目</RouterLink>
+      <RouterLink to="/record" class="nav-link" active-class="active">计时</RouterLink>
+      <RouterLink to="/sessions" class="nav-link" active-class="active">历史</RouterLink>
+      <RouterLink to="/projects" class="nav-link" active-class="active">项目</RouterLink>
       <RouterLink to="/" class="nav-link" active-class="active">统计</RouterLink>
+      <RouterLink to="/help" class="nav-link" active-class="active">说明</RouterLink>
     </nav>
   </div>
 </template>
@@ -36,7 +37,7 @@
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   min-height: var(--touch-min);
   padding: 0.5rem;
@@ -46,6 +47,7 @@
 }
 
 .nav-link {
+  flex: 1;
   padding: 0.5rem 1rem;
   color: var(--text-muted);
   font-size: 0.95rem;
@@ -58,6 +60,5 @@
 
 .nav-link.active {
   color: var(--accent);
-  font-weight: 600;
 }
 </style>

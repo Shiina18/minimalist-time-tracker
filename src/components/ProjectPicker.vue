@@ -1,7 +1,7 @@
 <template>
   <div v-if="open" class="picker-overlay" @click.self="emit('close')">
     <div class="picker">
-      <h3 class="picker-title">选择子项目</h3>
+      <h3 class="picker-title">选择项目</h3>
       <div class="picker-new">
         <input
           v-model="newName"
@@ -14,13 +14,17 @@
           新建
         </button>
       </div>
+      <label class="picker-default-start">
+        <input v-model="newDefaultStart" type="checkbox" />
+        <span>设为默认起始项目</span>
+      </label>
       <ul class="picker-list">
         <li v-for="p in projects" :key="p.id" class="picker-item">
           <button type="button" class="picker-item-btn" @click="emit('select', p)">
             {{ p.name }}
           </button>
         </li>
-        <li v-if="projects.length === 0 && !newName" class="picker-empty">暂无子项目</li>
+        <li v-if="projects.length === 0 && !newName" class="picker-empty">暂无项目</li>
       </ul>
       <button type="button" class="btn btn-ghost picker-close" @click="emit('close')">取消</button>
     </div>
@@ -36,6 +40,7 @@ const emit = defineEmits(['close', 'select'])
 
 const projects = ref([])
 const newName = ref('')
+const newDefaultStart = ref(false)
 
 watch(
   () => props.open,
@@ -52,10 +57,10 @@ async function load() {
 async function createAndStart() {
   const name = newName.value.trim()
   if (!name) return
-  const project = await addProject({ name, archived: false })
+  const project = await addProject({ name, archived: false, defaultStart: newDefaultStart.value })
   newName.value = ''
   emit('select', project)
-  emit('close')
+  /* 不 emit('close')：父组件 onSelectProject 会关选择器；若也 emit('close') 会触发 onClosePicker，把当前项目误置为未归类 */
 }
 </script>
 
@@ -91,7 +96,22 @@ async function createAndStart() {
 .picker-new {
   display: flex;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.picker-default-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
   margin-bottom: 1rem;
+}
+
+.picker-default-start input {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .picker-input {

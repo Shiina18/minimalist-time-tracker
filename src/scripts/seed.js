@@ -1,5 +1,5 @@
 /**
- * 往当前数据库写入随机数据：最近 6 个月，子项目 test-1 / test-2 / 归档 test-3。
+ * 往当前数据库写入随机数据：最近 6 个月，项目 test-1 / test-2 / 归档 test-3。
  * 开发环境在浏览器控制台执行：__seed()
  */
 import { addProject, addSession, addSegment, getAllProjects } from '../db/index.js'
@@ -32,6 +32,12 @@ export async function seed() {
   const p3 = await ensureProject('test-3', true)
   const projectIds = [null, p1.id, p2.id, p3.id]
 
+  const sampleNotes = [
+    '上午专注开发\n[test-1] 完成 API 联调\n[test-2] 文档补充',
+    '[test-1] 需求评审与排期',
+    '未归类时段\n[test-2] 修复若干 bug',
+  ]
+
   const sessionsAdded = []
   for (let i = 0; i < 6; i++) {
     const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
@@ -48,7 +54,8 @@ export async function seed() {
       const durationMs = randomInt(10, 120) * 60 * 1000
       const endAt = startAt + durationMs
       if (endAt > rangeEnd) continue
-      const session = await addSession({ startAt, endAt })
+      const note = randomInt(0, 2) === 0 ? sampleNotes[randomInt(0, sampleNotes.length - 1)] : ''
+      const session = await addSession({ startAt, endAt, note })
       sessionsAdded.push(session)
 
       const numSegs = randomInt(0, 3)

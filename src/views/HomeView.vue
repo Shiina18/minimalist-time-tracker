@@ -15,12 +15,33 @@
     <template v-else>
       <div class="timer-block">
         <div class="timer-section">
-          <p class="timer-value">{{ formatDuration(elapsedMs) }}</p>
-          <p class="timer-paused" v-if="pausedAt">已暂停</p>
+          <p class="timer-value" :class="{ 'timer-value--paused': pausedAt }">
+            {{ formatDuration(elapsedMs) }}
+          </p>
         </div>
         <div class="current-project" v-if="currentProjectName">
           <span class="current-project-label">当前：</span>
           <span class="current-project-name">{{ currentProjectName }}</span>
+        </div>
+        <div class="note-block">
+          <div
+            v-if="!noteEditing"
+            class="note-display"
+            @click="startEditNote"
+          >
+            {{ (activeSession.note || '').trim() || '添加备注' }}
+          </div>
+          <textarea
+            v-else
+            ref="noteInputRef"
+            v-model="noteValue"
+            class="note-textarea"
+            :maxlength="NOTE_MAX_LENGTH"
+            rows="3"
+            placeholder="添加备注"
+            @blur="onNoteBlur"
+            @keydown.enter="onNoteEnter"
+          />
         </div>
       <div class="actions">
         <button type="button" class="btn btn-end" @click="endSession">结束</button>
@@ -33,7 +54,7 @@
         </button>
         <div class="project-actions">
           <button type="button" class="btn btn-secondary" @click="openPicker">
-            {{ currentProjectName ? '切换子项目' : '选择子项目' }}
+            {{ currentProjectName ? '切换项目' : '选择项目' }}
           </button>
           <button
             v-if="currentProjectName"
@@ -41,10 +62,13 @@
             class="btn btn-secondary btn-end-project"
             @click="endCurrentProject"
           >
-            结束当前子项目
+            结束当前项目
           </button>
         </div>
       </div>
+      </div>
+      <div v-if="toastMessage" class="toast">
+        {{ toastMessage }}
       </div>
       <ProjectPicker
         :open="showPicker"
@@ -56,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   getActiveSession,
   getSegmentsBySessionId,
@@ -65,11 +89,16 @@ import {
   setSessionEnd,
   setSegmentEnd,
   getProject,
-  deleteSegment,
+  getDefaultStartProject,
   deleteSession,
+  deleteSegment,
+  updateSession,
+  updateSegment,
 } from '../db/index.js'
 
 const MIN_DURATION_MS = 3 * 60 * 1000
+const MIN_UNCLASSIFIED_MS = MIN_DURATION_MS
+import { NOTE_MAX_LENGTH } from '../constants.js'
 import { formatDuration } from '../utils/format.js'
 import { computeElapsedMs } from '../utils/timer.js'
 import ProjectPicker from '../components/ProjectPicker.vue'
@@ -78,20 +107,60 @@ const activeSession = ref(null)
 const segments = ref([])
 const showPicker = ref(false)
 const pausedAt = ref(null)
+const pausedProjectId = ref(null)
 let tickInterval = null
 
 const currentSegment = computed(() =>
   segments.value.find((s) => s.endAt == null),
 )
+const projectMap = ref({})
 const currentProjectName = computed(() => {
   const seg = currentSegment.value
-  if (!seg || !seg.projectId) return ''
-  const p = projectMap.value[seg.projectId]
+  const projectId =
+    pausedAt.value && pausedProjectId.value != null
+      ? pausedProjectId.value
+      : seg?.projectId ?? null
+  if (!projectId) return ''
+  const p = projectMap.value[projectId]
   return p ? p.name : ''
 })
-const projectMap = ref({})
+
+const noteEditing = ref(false)
+const noteValue = ref('')
+const noteInputRef = ref(null)
 
 const elapsedMs = ref(0)
+const toastMessage = ref('')
+let toastTimer = null
+
+function showToast(message) {
+  toastMessage.value = message
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+  }
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimer = null
+  }, 3000)
+}
+
+async function closeSegmentWithThreeMinuteRule(seg, endAt, { emitToast = true } = {}) {
+  if (!seg) return
+  await setSegmentEnd(seg.id, endAt)
+  const dur = endAt - seg.startAt
+  const unclassified = seg.projectId == null || dur < MIN_DURATION_MS
+  if (unclassified && dur < MIN_UNCLASSIFIED_MS) {
+    await deleteSegment(seg.id)
+    if (emitToast) {
+      showToast('未归类且不足 3 分钟的一段已丢弃, 避免产生碎片')
+    }
+  } else if (dur < MIN_DURATION_MS) {
+    await updateSegment(seg.id, { projectId: null })
+    if (emitToast) {
+      showToast('不足 3 分钟的一段已归为未归类')
+    }
+  }
+}
 
 function computeElapsed() {
   if (!activeSession.value) return 0
@@ -104,21 +173,31 @@ function openPicker() {
 }
 
 async function togglePause() {
-  if (pausedAt.value && !showPicker.value) {
+  if (showPicker.value) return
+  const session = activeSession.value
+  if (!session) return
+
+  if (!pausedAt.value) {
     const seg = currentSegment.value
-    const endAt = pausedAt.value
+    const now = Date.now()
     const projectId = seg?.projectId ?? null
-    if (seg) await setSegmentEnd(seg.id, endAt)
+    if (seg) {
+      await closeSegmentWithThreeMinuteRule(seg, now, { emitToast: true })
+    }
+    pausedAt.value = now
+    pausedProjectId.value = projectId
+    segments.value = await getSegmentsBySessionId(session.id)
+  } else {
+    const projectId = pausedProjectId.value
     await addSegment({
-      sessionId: activeSession.value.id,
+      sessionId: session.id,
       projectId,
       startAt: Date.now(),
       endAt: null,
     })
     pausedAt.value = null
-    segments.value = await getSegmentsBySessionId(activeSession.value.id)
-  } else if (!pausedAt.value && !showPicker.value) {
-    pausedAt.value = Date.now()
+    pausedProjectId.value = null
+    segments.value = await getSegmentsBySessionId(session.id)
   }
 }
 
@@ -138,6 +217,37 @@ async function loadActive() {
   elapsedMs.value = computeElapsed()
 }
 
+function startEditNote() {
+  noteValue.value = (activeSession.value?.note ?? '').trim()
+  noteEditing.value = true
+  nextTick(() => noteInputRef.value?.focus())
+}
+
+async function onNoteBlur() {
+  noteEditing.value = false
+  const trimmed = (noteValue.value || '').trim()
+  const current = (activeSession.value?.note ?? '').trim()
+  if (trimmed !== current) {
+    await updateSession(activeSession.value.id, { note: trimmed || '' })
+    activeSession.value = { ...activeSession.value, note: trimmed || '' }
+  }
+}
+
+function onNoteEnter(e) {
+  if (e.key !== 'Enter') return
+  e.preventDefault()
+  const ta = e.target
+  const start = ta.selectionStart
+  const end = ta.selectionEnd
+  const insert = currentProjectName.value ? `\n[${currentProjectName.value}] ` : '\n'
+  const val = noteValue.value
+  const newVal = val.slice(0, start) + insert + val.slice(end)
+  noteValue.value = newVal
+  nextTick(() => {
+    ta.selectionStart = ta.selectionEnd = start + insert.length
+  })
+}
+
 function startTick() {
   tickInterval = setInterval(() => {
     elapsedMs.value = computeElapsed()
@@ -153,9 +263,10 @@ function stopTick() {
 
 async function startSession() {
   const session = await addSession({ startAt: Date.now(), endAt: null })
+  const defaultProject = await getDefaultStartProject()
   await addSegment({
     sessionId: session.id,
-    projectId: null,
+    projectId: defaultProject?.id ?? null,
     startAt: session.startAt,
     endAt: null,
   })
@@ -168,15 +279,14 @@ async function endSession() {
   const now = Date.now()
   const seg = currentSegment.value
   if (seg) {
-    const dur = now - seg.startAt
-    if (dur >= MIN_DURATION_MS) await setSegmentEnd(seg.id, now)
-    else await deleteSegment(seg.id)
+    await closeSegmentWithThreeMinuteRule(seg, now, { emitToast: true })
   }
   const session = activeSession.value
   if (!session) return
   const sessionDur = now - session.startAt
   if (sessionDur < MIN_DURATION_MS) {
     await deleteSession(session.id)
+    showToast('整次记录不足 3 分钟，未保存')
   } else {
     await setSessionEnd(session.id, now)
   }
@@ -187,9 +297,7 @@ async function endCurrentProject() {
   const seg = currentSegment.value
   if (!seg) return
   const now = Date.now()
-  const dur = now - seg.startAt
-  if (dur >= MIN_DURATION_MS) await setSegmentEnd(seg.id, now)
-  else await deleteSegment(seg.id)
+  await closeSegmentWithThreeMinuteRule(seg, now, { emitToast: true })
   await addSegment({
     sessionId: activeSession.value.id,
     projectId: null,
@@ -204,9 +312,7 @@ async function onSelectProject(project) {
   const seg = currentSegment.value
   const endAt = pausedAt.value ?? now
   if (seg) {
-    const dur = endAt - seg.startAt
-    if (dur >= MIN_DURATION_MS) await setSegmentEnd(seg.id, endAt)
-    else await deleteSegment(seg.id)
+    await closeSegmentWithThreeMinuteRule(seg, endAt, { emitToast: true })
   }
   await addSegment({
     sessionId: activeSession.value.id,
@@ -225,9 +331,7 @@ async function onClosePicker() {
   const seg = currentSegment.value
   const endAt = pausedAt.value ?? now
   if (seg) {
-    const dur = endAt - seg.startAt
-    if (dur >= MIN_DURATION_MS) await setSegmentEnd(seg.id, endAt)
-    else await deleteSegment(seg.id)
+    await closeSegmentWithThreeMinuteRule(seg, endAt, { emitToast: true })
   }
   await addSegment({
     sessionId: activeSession.value.id,
@@ -321,9 +425,7 @@ onUnmounted(() => {
   letter-spacing: 0.02em;
 }
 
-.timer-paused {
-  margin: 0.25rem 0 0;
-  font-size: 0.9rem;
+.timer-value--paused {
   color: var(--text-muted);
 }
 
@@ -343,6 +445,40 @@ onUnmounted(() => {
 
 .current-project-name {
   word-break: break-word;
+}
+
+.note-block {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 0.75rem;
+}
+
+.note-display {
+  white-space: pre-wrap;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: text;
+  border: 1px solid var(--border);
+}
+
+.note-display:hover {
+  border-color: var(--accent);
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+  min-height: 4em;
 }
 
 .actions {
@@ -393,5 +529,20 @@ onUnmounted(() => {
   color: var(--text-muted);
   min-height: var(--touch-min);
   padding: 0.5rem;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--touch-min) + 1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
 }
 </style>

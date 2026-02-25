@@ -9,8 +9,11 @@
         <ul class="session-list">
           <li v-for="s in group.sessions" :key="s.id" class="session-item">
             <RouterLink :to="`/sessions/${s.id}`" class="session-link">
-              <span class="session-time">{{ formatTimeRange(s.startAt, s.endAt) }}</span>
-              <span class="session-duration">{{ formatDurationShort(sessionDuration(s)) }}</span>
+              <div class="session-link-row">
+                <span class="session-time">{{ formatTimeRange(s.startAt, s.endAt) }}</span>
+                <span class="session-duration">{{ formatDurationShort(sessionDuration(s)) }}</span>
+              </div>
+              <p v-if="noteSummary(s.note)" class="session-note-summary">{{ noteSummary(s.note) }}</p>
             </RouterLink>
           </li>
         </ul>
@@ -50,6 +53,12 @@ function formatTimeRange(start, end) {
   if (!d2) return t1
   const t2 = d2.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   return `${t1} – ${t2}`
+}
+
+function noteSummary(note, maxLen = 40) {
+  if (!note || !note.trim()) return ''
+  const firstLine = note.split('\n')[0].trim()
+  return firstLine.length > maxLen ? firstLine.slice(0, maxLen) + '…' : firstLine
 }
 
 async function load() {
@@ -117,15 +126,32 @@ onMounted(load)
 
 .session-link {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
   padding: 1rem;
   color: var(--text);
   min-height: var(--touch-min);
 }
 
+.session-link-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .session-duration {
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+.session-note-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 </style>

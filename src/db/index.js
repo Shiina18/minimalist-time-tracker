@@ -40,13 +40,20 @@ export async function getProject(id) {
   return db.get('projects', id)
 }
 
-export async function addProject({ name, archived = false }) {
+export async function addProject({ name, archived = false, defaultStart = false }) {
   const db = await getDB()
+  if (defaultStart) {
+    const all = await db.getAll('projects')
+    for (const p of all) {
+      if (p.defaultStart) await updateProject(p.id, { defaultStart: false })
+    }
+  }
   const project = {
     id: genId(),
     name,
     createdAt: Date.now(),
     archived,
+    defaultStart: defaultStart || false,
   }
   await db.add('projects', project)
   return project
@@ -56,9 +63,21 @@ export async function updateProject(id, patch) {
   const db = await getDB()
   const project = await db.get('projects', id)
   if (!project) return
+  if (patch.defaultStart === true) {
+    const all = await db.getAll('projects')
+    for (const p of all) {
+      if (p.id !== id && p.defaultStart) await updateProject(p.id, { defaultStart: false })
+    }
+  }
   const updated = { ...project, ...patch }
   await db.put('projects', updated)
   return updated
+}
+
+/** @returns {Promise<import('./types.js').Project | undefined>} */
+export async function getDefaultStartProject() {
+  const all = await getAllProjects()
+  return all.find((p) => p.defaultStart === true)
 }
 
 export async function deleteProject(id) {
@@ -88,12 +107,13 @@ export async function getActiveSession() {
   return all.find((s) => s.endAt == null)
 }
 
-export async function addSession({ startAt, endAt = null }) {
+export async function addSession({ startAt, endAt = null, note }) {
   const db = await getDB()
   const session = {
     id: genId(),
     startAt,
     endAt,
+    note: note ?? '',
   }
   await db.add('sessions', session)
   return session

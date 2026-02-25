@@ -1,17 +1,23 @@
 <template>
   <div class="projects">
-    <h1 class="page-title">子项目</h1>
+    <h1 class="page-title">项目</h1>
     <div class="add-row">
       <input
         v-model="newName"
         type="text"
-        placeholder="新建子项目"
+        placeholder="新建项目"
         class="add-input"
         @keydown.enter="addOne"
       />
       <button type="button" class="btn btn-primary" :disabled="!newName.trim()" @click="addOne">
         添加
       </button>
+    </div>
+    <div class="default-start-row">
+      <label class="checkbox-label">
+        <input v-model="newDefaultStart" type="checkbox" />
+        <span>设为默认起始项目</span>
+      </label>
     </div>
     <section class="section">
       <h2 class="section-title">进行中</h2>
@@ -47,6 +53,10 @@
       <div class="modal">
         <h3>重命名</h3>
         <input v-model="editName" type="text" class="add-input" @keydown.enter="saveEdit" />
+        <label class="checkbox-label modal-checkbox">
+          <input v-model="editDefaultStart" type="checkbox" />
+          <span>设为默认起始项目</span>
+        </label>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" @click="editing = null">取消</button>
           <button type="button" class="btn btn-primary" @click="saveEdit">保存</button>
@@ -67,9 +77,11 @@ import {
 
 const projects = ref([])
 const newName = ref('')
+const newDefaultStart = ref(false)
 const archivedOpen = ref(false)
 const editing = ref(null)
 const editName = ref('')
+const editDefaultStart = ref(false)
 
 const unarchived = computed(() => projects.value.filter((p) => !p.archived))
 const archived = computed(() => projects.value.filter((p) => p.archived))
@@ -81,7 +93,7 @@ async function load() {
 async function addOne() {
   const name = newName.value.trim()
   if (!name) return
-  await addProject({ name, archived: false })
+  await addProject({ name, archived: false, defaultStart: newDefaultStart.value })
   newName.value = ''
   await load()
 }
@@ -89,13 +101,14 @@ async function addOne() {
 function startEdit(p) {
   editing.value = p
   editName.value = p.name
+  editDefaultStart.value = p.defaultStart === true
 }
 
 async function saveEdit() {
   if (!editing.value) return
   const name = editName.value.trim()
   if (!name) return
-  await updateProject(editing.value.id, { name })
+  await updateProject(editing.value.id, { name, defaultStart: editDefaultStart.value })
   editing.value = null
   await load()
 }
@@ -128,7 +141,29 @@ onMounted(load)
 .add-row {
   display: flex;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.default-start-row {
   margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.modal-checkbox {
+  margin-bottom: 1rem;
 }
 
 .add-input {

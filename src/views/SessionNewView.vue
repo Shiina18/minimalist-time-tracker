@@ -10,9 +10,19 @@
         <label>结束时间</label>
         <input v-model="endAtLocal" type="datetime-local" class="input" />
       </div>
+      <div class="meta-row">
+        <label>备注</label>
+        <textarea
+          v-model="note"
+          class="input textarea"
+          placeholder="选填，支持换行"
+          :maxlength="NOTE_MAX_LENGTH"
+          rows="3"
+        />
+      </div>
     </div>
     <h2 class="section-title">时间段（可选）</h2>
-    <p class="hint">不填则整段记为未归类；可添加多段并指定子项目。</p>
+    <p class="hint">不填则整段记为未归类；可添加多段并指定项目。</p>
     <ul class="segments-edit">
       <li v-for="(seg, i) in segmentRows" :key="i" class="segment-row">
         <select v-model="seg.projectId" class="input select">
@@ -36,11 +46,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { addSession, addSegment, getProjects } from '../db/index.js'
+import { NOTE_MAX_LENGTH } from '../constants.js'
 
 const router = useRouter()
 const projects = ref([])
 const startAtLocal = ref('')
 const endAtLocal = ref('')
+const note = ref('')
 const segmentRows = ref([])
 
 const canSave = computed(() => {
@@ -77,7 +89,8 @@ async function save() {
       }
     }
   }
-  const session = await addSession({ startAt, endAt })
+  const noteTrimmed = note.value.trim()
+  const session = await addSession({ startAt, endAt, note: noteTrimmed })
   if (segmentRows.value.length === 0) {
     await addSegment({ sessionId: session.id, projectId: null, startAt, endAt })
   } else {
@@ -146,6 +159,11 @@ onMounted(async () => {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 4em;
 }
 
 .select {

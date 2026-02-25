@@ -36,6 +36,25 @@
             />
           </div>
         </div>
+        <div class="meta-row">
+          <label>备注</label>
+          <div
+            v-if="!editingNote"
+            class="note-display"
+            @click="editingNote = true; noteEditValue = (session.note || '').trim()"
+          >
+            {{ (session.note || '').trim() || '无' }}
+          </div>
+          <textarea
+            v-else
+            ref="noteInputRef"
+            v-model="noteEditValue"
+            class="input note-textarea"
+            :maxlength="NOTE_MAX_LENGTH"
+            rows="3"
+            @blur="onNoteBlur"
+          />
+        </div>
         <p class="duration">总时长 {{ formatDuration(sessionDuration) }}</p>
       </div>
       <h2 class="segments-title">时间段</h2>
@@ -56,7 +75,7 @@
         <div class="modal">
           <h3>{{ addingSegment ? '添加时间段' : '编辑时间段' }}</h3>
           <div class="meta-row">
-            <label>子项目</label>
+            <label>项目</label>
             <select v-model="editSegmentForm.projectId" class="select">
               <option :value="null">（无）</option>
               <option v-for="p in allProjects" :key="p.id" :value="p.id">{{ p.name }}</option>
@@ -100,8 +119,9 @@ import {
   deleteSegment,
   deleteSession,
 } from '../db/index.js'
-import { formatDuration } from '../utils/format.js'
+import { formatDuration, formatDurationShort } from '../utils/format.js'
 import { toDateInputValue, toTimeInputValue, fromDateAndTime } from '../utils/datetime.js'
+import { NOTE_MAX_LENGTH } from '../constants.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,6 +129,9 @@ const session = ref(null)
 const segments = ref([])
 const allProjects = ref([])
 const loading = ref(true)
+const editingNote = ref(false)
+const noteEditValue = ref('')
+const noteInputRef = ref(null)
 const editingSegment = ref(null)
 const addingSegment = ref(false)
 const editSegmentForm = ref({
@@ -140,15 +163,21 @@ function projectName(projectId) {
 
 function formatSegmentTime(seg) {
   const start = new Date(seg.startAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  const end = seg.endAt
+  const endStr = seg.endAt
     ? new Date(seg.endAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     : '—'
-  return `${start} – ${end}`
+  let text = `${start} – ${endStr}`
+  if (seg.endAt && seg.endAt > seg.startAt) {
+    const dur = seg.endAt - seg.startAt
+    text += ` · ${formatDurationShort(dur)}`
+  }
+  return text
 }
 
 async function load() {
   if (!sessionId.value) return
-  loading.value = true
+  const isInitial = session.value == null
+  if (isInitial) loading.value = true
   session.value = await getSession(sessionId.value)
   segments.value = session.value ? await getSegmentsBySessionId(sessionId.value) : []
   allProjects.value = await getAllProjects()
@@ -160,6 +189,16 @@ async function load() {
     endTime.value = toTimeInputValue(endTs)
   }
   loading.value = false
+}
+
+async function onNoteBlur() {
+  const trimmed = (noteEditValue.value || '').trim()
+  const current = (session.value?.note ?? '').trim()
+  if (trimmed !== current) {
+    await updateSession(session.value.id, { note: trimmed || '' })
+    await load()
+  }
+  editingNote.value = false
 }
 
 watch(sessionId, load, { immediate: true })
@@ -366,6 +405,22 @@ async function removeSession() {
   margin: 0.75rem 0 0;
   font-size: 0.95rem;
   color: var(--text-muted);
+}
+
+.note-display {
+  white-space: pre-wrap;
+  min-height: 2.5rem;
+  padding: 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: text;
+}
+
+.note-textarea {
+  resize: vertical;
+  min-height: 4em;
 }
 
 .segments-title {

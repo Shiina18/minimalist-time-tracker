@@ -99,28 +99,48 @@
                     background: weekProjectColors[weekProjectColorIndex(p.projectId)] ?? weekProjectColors[0],
                   }"
                 >
-                  <span v-if="p.ms > 0" class="week-chart-seg-text">{{ formatDurationShort(p.ms) }}</span>
+                  <span v-if="p.ms > 0" class="week-chart-seg-text">{{ formatDurationMinutes(p.ms) }}</span>
                 </div>
               </div>
-              <span v-if="day.ms > 0" class="week-chart-duration">{{ formatDurationShort(day.ms) }}</span>
+              <span v-if="day.ms > 0" class="week-chart-duration">{{ formatDurationMinutes(day.ms) }}</span>
             </div>
             <span class="week-chart-label">{{ day.label }}</span>
           </div>
         </div>
         <div v-if="weekProjectTotals.length > 0" class="week-project-totals">
-          <h2 class="section-title">各子项目总时长</h2>
-          <div class="week-totals-list">
+          <h2 class="section-title">各项目总时长</h2>
+          <div class="week-project-bars">
             <div
               v-for="item in weekProjectTotalsWithPercent"
               :key="item.projectId"
-              class="week-total-row"
+              class="week-project-row"
             >
-              <span class="week-total-name">{{ item.name }}</span>
-              <span class="week-total-meta">
-                <span class="week-total-duration">{{ formatDuration(item.ms) }}</span>
-                <span v-if="item.percent != null" class="week-total-percent">{{ item.percent }}%</span>
-              </span>
+              <div class="week-project-info">
+                <span class="week-project-name">{{ item.name }}</span>
+                <span class="week-project-meta">
+                  <span class="week-project-duration">{{ formatDuration(item.ms) }}</span>
+                  <span v-if="item.percent != null" class="week-project-percent">{{ item.percent }}%</span>
+                </span>
+              </div>
+              <div class="week-project-bar-wrap">
+                <div
+                  class="week-project-bar"
+                  :style="{
+                    width: weekTotalMs ? (item.ms / weekTotalMs) * 100 + '%' : 0,
+                    background: weekProjectColors[weekProjectColorIndex(item.projectId)] ?? weekProjectColors[0],
+                  }"
+                />
+              </div>
             </div>
+          </div>
+        </div>
+        <div v-if="weekNotesEntries.length > 0" class="week-notes">
+          <h2 class="section-title">备注</h2>
+          <div class="week-notes-list">
+            <template v-for="entry in weekNotesEntries" :key="entry.sessionId">
+              <div class="week-notes-date">{{ entry.date }}</div>
+              <div class="week-notes-text">{{ entry.note }}</div>
+            </template>
           </div>
         </div>
       </section>
@@ -178,7 +198,7 @@
         </div>
       </section>
       <section v-if="byProject.length > 0" class="by-project">
-        <h2 class="section-title">按子项目</h2>
+        <h2 class="section-title">按项目</h2>
         <div class="project-bars">
           <div
             v-for="item in byProject"
@@ -198,7 +218,7 @@
           </div>
         </div>
       </section>
-      <p v-else class="empty">暂无子项目分布</p>
+      <p v-else class="empty">暂无项目分布</p>
     </template>
 
     <template v-else>
@@ -259,7 +279,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getAllSessions, getSegmentsBySessionId, getAllProjects } from '../db/index.js'
-import { formatDuration, formatDurationShort } from '../utils/format.js'
+import { formatDate, formatDuration, formatDurationShort, formatDurationMinutes } from '../utils/format.js'
 import {
   aggregateMsByDay,
   getMonthBounds,
@@ -345,11 +365,18 @@ function aggregateByProjectInRange(rangeStart, rangeEnd, nowTs) {
 }
 
 const weekProjectColors = [
-  'rgba(124, 110, 246, 0.85)',
-  'rgba(34, 197, 94, 0.75)',
-  'rgba(234, 179, 8, 0.75)',
-  'rgba(236, 72, 153, 0.75)',
-  'rgba(20, 184, 166, 0.75)',
+  'rgba(124, 110, 246, 0.85)', // 紫
+  'rgba(34, 197, 94, 0.75)', // 绿
+  'rgba(234, 179, 8, 0.75)', // 黄
+  'rgba(236, 72, 153, 0.75)', // 粉
+  'rgba(20, 184, 166, 0.75)', // 青
+  'rgba(59, 130, 246, 0.8)', // 蓝
+  'rgba(244, 114, 182, 0.8)', // 亮粉
+  'rgba(248, 113, 113, 0.8)', // 红
+  'rgba(139, 92, 246, 0.8)', // 靛
+  'rgba(34, 197, 178, 0.8)', // 蓝绿
+  'rgba(251, 146, 60, 0.8)', // 橙
+  'rgba(163, 163, 163, 0.9)', // 灰
 ]
 
 const weekDayCells = computed(() => {
@@ -431,6 +458,15 @@ const weekProjectTotalsWithPercent = computed(() => {
     ...item,
     percent: total > 0 ? Math.round((item.ms / total) * 100) : null,
   }))
+})
+
+/** 周范围内有备注的 session，按 startAt 时间顺序 */
+const weekNotesEntries = computed(() => {
+  const { start, end } = weekBounds.value
+  return sessions.value
+    .filter((s) => s.startAt >= start && s.startAt <= end && (s.note?.trim() ?? '').length > 0)
+    .sort((a, b) => a.startAt - b.startAt)
+    .map((s) => ({ sessionId: s.id, date: formatDate(s.startAt), note: (s.note ?? '').trim() }))
 })
 
 const weekRangeLabel = computed(() => {
@@ -674,7 +710,12 @@ async function load() {
   sessionSegments.value = map
 }
 
-onMounted(load)
+onMounted(() => {
+  const { start, end } = getLast7DaysBounds()
+  weekStartStr.value = toDateInputValue(start)
+  weekEndStr.value = toDateInputValue(end)
+  load()
+})
 </script>
 
 <style scoped>
@@ -855,37 +896,87 @@ onMounted(load)
   border-top: 1px solid var(--border);
 }
 
-.week-totals-list {
+.week-project-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.week-project-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.week-project-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.week-project-name {
+  font-weight: 500;
+}
+
+.week-project-duration {
+  display: inline-block;
+  min-width: 7ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.week-project-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.week-project-percent {
+  display: inline-block;
+  min-width: 4ch;
+  text-align: right;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.week-project-bar-wrap {
+  height: 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.week-project-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.week-notes {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.week-notes-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.week-total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.week-total-name {
-  font-weight: 500;
-}
-
-.week-total-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.week-total-duration {
-  color: var(--text-muted);
+.week-notes-date {
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
-.week-total-percent {
-  font-size: 0.85em;
-  color: var(--text-muted);
+.week-notes-text {
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .month-header {
