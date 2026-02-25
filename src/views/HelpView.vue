@@ -40,10 +40,13 @@
       </ul>
       <p class="warning">注意: 清除数据后无法恢复, 请在确认不再需要这些记录时再操作。</p>
     </section>
+
+    <p class="version">v{{ version }}</p>
   </div>
 </template>
 
 <script setup>
+const version = __APP_VERSION__
 </script>
 
 <style scoped>
@@ -99,6 +102,12 @@
 
 .list li {
   margin-bottom: 0.25rem;
+}
+
+.version {
+  margin: 2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .warning {
