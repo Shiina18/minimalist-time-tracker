@@ -168,7 +168,6 @@ function computeElapsed() {
 }
 
 function openPicker() {
-  pausedAt.value = Date.now()
   showPicker.value = true
 }
 
@@ -332,21 +331,7 @@ async function onSelectProject(project) {
 }
 
 async function onClosePicker() {
-  const now = Date.now()
-  const seg = currentSegment.value
-  const endAt = pausedAt.value ?? now
-  if (seg) {
-    await closeSegmentWithThreeMinuteRule(seg, endAt, { emitToast: true })
-  }
-  await addSegment({
-    sessionId: activeSession.value.id,
-    projectId: null,
-    startAt: now,
-    endAt: null,
-  })
-  pausedAt.value = null
   showPicker.value = false
-  segments.value = await getSegmentsBySessionId(activeSession.value.id)
 }
 
 onMounted(async () => {
