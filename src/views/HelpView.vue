@@ -19,10 +19,14 @@
       <h3 class="sub-title">安卓手机 (Chrome)</h3>
       <ol class="steps">
         <li>用 Chrome 打开本应用。</li>
-        <li>等待地址栏出现 ｢安装应用｣, 或点右上角 ｢⋮｣ 菜单。</li>
-        <li>选择 ｢安装应用｣ 或 ｢添加到主屏幕｣。</li>
-        <li>确认后主屏幕会出现图标, 之后从图标进入即可全屏使用。</li>
+        <li>点右上角 ｢⋮｣ 菜单, 选择 ｢添加到主屏幕｣。</li>
+        <li>在弹出的对话框中点 ｢安装｣，主屏幕会出现图标。</li>
+        <li>部分 Chrome 版本也会在地址栏直接显示 ｢安装应用｣ 按钮, 点击后按提示安装即可。</li>
       </ol>
+      <p class="tip">
+        部分手机自带浏览器 (如小米浏览器) 仅支持添加书签快捷方式, 无法安装真正的独立应用; 建议使用 Chrome
+        或支持 PWA 的浏览器进行安装。
+      </p>
     </section>
 
     <section class="section">
@@ -56,8 +60,8 @@ const version = __APP_VERSION__
 
 .page-title {
   margin: 0 0 1rem;
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .section {
@@ -66,22 +70,26 @@ const version = __APP_VERSION__
 
 .section-title {
   margin: 0 0 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .intro,
-.tip,
+.tip {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
 .warning {
   margin: 0 0 0.5rem;
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: var(--danger);
 }
 
 .sub-title {
   margin: 0.75rem 0 0.25rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .steps {
@@ -108,10 +116,6 @@ const version = __APP_VERSION__
   margin: 2rem 0 0;
   font-size: 0.85rem;
   color: var(--text-muted);
-}
-
-.warning {
-  color: var(--danger);
 }
 </style>
 
