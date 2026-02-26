@@ -1,5 +1,5 @@
 <template>
-  <div class="home" :class="{ 'home--start': !activeSession }">
+  <div class="home" :class="{ 'home--start': !activeSession, 'home--running': activeSession }">
     <template v-if="!activeSession">
       <div
         class="hero"
@@ -393,6 +393,12 @@ onUnmounted(() => {
   margin: 0;
   color: var(--text-muted);
   font-size: 1rem;
+}
+
+/* 有 session 时计时界面：限制在一屏内，禁止整页滚动（避免刷新后出现纵向滚动条） */
+.home--running {
+  height: 100%;
+  overflow: hidden;
 }
 
 .timer-block {

@@ -26,6 +26,7 @@
 
 .main {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 1rem;
   padding-bottom: calc(var(--touch-min) + 1rem + env(safe-area-inset-bottom, 0px));
