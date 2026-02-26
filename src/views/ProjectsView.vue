@@ -15,7 +15,7 @@
     </div>
     <div class="default-start-row">
       <label class="checkbox-label">
-        <input v-model="newDefaultStart" type="checkbox" />
+        <input v-model="newDefaultStart" type="checkbox" class="app-checkbox" />
         <span>设为默认起始项目</span>
       </label>
     </div>
@@ -54,7 +54,7 @@
         <h3>重命名</h3>
         <input v-model="editName" type="text" class="add-input" @keydown.enter="saveEdit" />
         <label class="checkbox-label modal-checkbox">
-          <input v-model="editDefaultStart" type="checkbox" />
+          <input v-model="editDefaultStart" type="checkbox" class="app-checkbox" />
           <span>设为默认起始项目</span>
         </label>
         <div class="modal-actions">
@@ -95,6 +95,7 @@ async function addOne() {
   if (!name) return
   await addProject({ name, archived: false, defaultStart: newDefaultStart.value })
   newName.value = ''
+  newDefaultStart.value = false
   await load()
 }
 
@@ -155,11 +156,6 @@ onMounted(load)
   font-size: 0.9rem;
   color: var(--text-muted);
   cursor: pointer;
-}
-
-.checkbox-label input {
-  width: 1.1rem;
-  height: 1.1rem;
 }
 
 .modal-checkbox {

@@ -15,7 +15,7 @@
         </button>
       </div>
       <label class="picker-default-start">
-        <input v-model="newDefaultStart" type="checkbox" />
+        <input v-model="newDefaultStart" type="checkbox" class="app-checkbox" />
         <span>设为默认起始项目</span>
       </label>
       <ul class="picker-list">
@@ -45,7 +45,10 @@ const newDefaultStart = ref(false)
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) load()
+    if (isOpen) {
+      load()
+      newDefaultStart.value = false
+    }
   },
 )
 
@@ -59,6 +62,7 @@ async function createAndStart() {
   if (!name) return
   const project = await addProject({ name, archived: false, defaultStart: newDefaultStart.value })
   newName.value = ''
+  newDefaultStart.value = false
   emit('select', project)
   /* 不 emit('close')：父组件 onSelectProject 会关选择器；若也 emit('close') 会触发 onClosePicker，把当前项目误置为未归类 */
 }
@@ -107,11 +111,6 @@ async function createAndStart() {
   color: var(--text-muted);
   cursor: pointer;
   margin-bottom: 1rem;
-}
-
-.picker-default-start input {
-  width: 1.1rem;
-  height: 1.1rem;
 }
 
 .picker-input {
