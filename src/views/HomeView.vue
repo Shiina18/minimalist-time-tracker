@@ -533,7 +533,7 @@ onUnmounted(() => {
   bottom: calc(var(--touch-min) + 1.25rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.8);
-  color: #fff;
+  color: var(--text);
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
   font-size: 0.85rem;

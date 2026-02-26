@@ -965,7 +965,7 @@ onMounted(() => {
 .week-chart-seg-text {
   font-size: 0.55rem;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text);
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
   white-space: nowrap;
   transform: rotate(-90deg);
@@ -1150,11 +1150,6 @@ onMounted(() => {
   border-radius: var(--radius);
   padding: 1rem;
   text-align: center;
-}
-
-.stat-item-total .stat-value {
-  color: var(--accent);
-  font-weight: 700;
 }
 
 .stat-value {
