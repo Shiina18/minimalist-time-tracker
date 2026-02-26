@@ -30,7 +30,10 @@ export async function seed() {
   const p1 = await ensureProject('test-1')
   const p2 = await ensureProject('test-2')
   const p3 = await ensureProject('test-3', true)
-  const projectIds = [null, p1.id, p2.id, p3.id]
+  await ensureProject('test-4')
+  await ensureProject('test-5')
+  const projsForSegs = await getAllProjects()
+  const projectIds = [null, ...projsForSegs.filter((p) => !p.archived).map((p) => p.id)]
 
   const sampleNotes = [
     '上午专注开发\n[test-1] 完成 API 联调\n[test-2] 文档补充',
@@ -51,14 +54,20 @@ export async function seed() {
       const startMin = randomInt(0, 59)
       const startAt = ts(y, month, day, startH, startMin)
       if (startAt < rangeStart || startAt > rangeEnd) continue
-      const durationMs = randomInt(10, 120) * 60 * 1000
+
+      const isLongMultiProject = j === 0 && i >= 4
+      const durationMs = isLongMultiProject
+        ? randomInt(110, 130) * 60 * 1000
+        : randomInt(10, 120) * 60 * 1000
       const endAt = startAt + durationMs
       if (endAt > rangeEnd) continue
       const note = randomInt(0, 2) === 0 ? sampleNotes[randomInt(0, sampleNotes.length - 1)] : ''
       const session = await addSession({ startAt, endAt, note })
       sessionsAdded.push(session)
 
-      const numSegs = randomInt(0, 3)
+      const numSegs = isLongMultiProject
+        ? randomInt(8, 14)
+        : randomInt(0, 3)
       if (numSegs === 0) {
         await addSegment({ sessionId: session.id, projectId: null, startAt, endAt })
       } else {
@@ -78,6 +87,6 @@ export async function seed() {
     }
   }
 
-  console.log('Seed done. Sessions:', sessionsAdded.length, 'Projects: test-1, test-2, test-3(archived)')
+  console.log('Seed done. Sessions:', sessionsAdded.length, 'Projects: test-1..5 (test-3 archived); some ~2h multi-segment sessions in recent months')
   return sessionsAdded.length
 }

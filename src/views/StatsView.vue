@@ -65,9 +65,9 @@
         </div>
       </div>
       <section class="week-chart-section heatmap-section">
-        <div v-if="weekLegendItems.length > 0" class="week-chart-legend">
+        <div v-if="weekChartLegendItems.length > 0" class="week-chart-legend">
           <span
-            v-for="item in weekLegendItems"
+            v-for="item in weekChartLegendItems"
             :key="item.projectId"
             class="week-legend-item"
           >
@@ -87,19 +87,22 @@
             <div class="week-chart-bar-cell">
               <div
                 class="week-chart-bar-wrap"
-                :style="{ height: weekMaxMs ? (day.ms / weekMaxMs) * 80 + 'px' : 0 }"
+                :style="{
+                  height: weekBarHeight(day) + 'px',
+                }"
               >
                 <div
-                  v-for="p in day.byProject"
+                  v-for="p in weekChartSegments(day)"
                   :key="p.projectId"
                   class="week-chart-bar-seg"
                   :style="{
                     height: day.ms ? (p.ms / day.ms) * 100 + '%' : 0,
-                    minHeight: p.ms > 0 ? '14px' : undefined,
-                    background: weekProjectColors[weekProjectColorIndex(p.projectId)] ?? weekProjectColors[0],
+                    minHeight: p.ms > 0 ? weekSegMinHeight(day, weekChartSegments(day).length) + 'px' : undefined,
+                    background: weekProjectColors[weekChartColorIndex(p.projectId)] ?? weekProjectColors[0],
                   }"
+                  :title="p.ms > 0 ? formatDurationMinutes(p.ms) + ' ' + p.name : undefined"
                 >
-                  <span v-if="p.ms > 0" class="week-chart-seg-text">{{ formatDurationMinutes(p.ms) }}</span>
+                  <span v-if="p.ms > 0 && weekSegMinHeight(day, weekChartSegments(day).length) >= 10" class="week-chart-seg-text">{{ formatDurationMinutes(p.ms) }}</span>
                 </div>
               </div>
               <span v-if="day.ms > 0" class="week-chart-duration">{{ formatDurationMinutes(day.ms) }}</span>
@@ -380,8 +383,11 @@ const weekProjectColors = [
   'rgba(139, 92, 246, 0.8)', // 靛
   'rgba(34, 197, 178, 0.8)', // 蓝绿
   'rgba(251, 146, 60, 0.8)', // 橙
-  'rgba(163, 163, 163, 0.9)', // 灰
+  'rgba(163, 163, 163, 0.9)', // 灰（其他）
 ]
+
+/** 柱内最多显示的项目数，其余合并为「其他」；3–6 段为常见最佳实践 */
+const WEEK_CHART_TOP_N = 6
 
 const weekDayCells = computed(() => {
   const { start, end } = weekBounds.value
@@ -411,6 +417,21 @@ const weekMaxMs = computed(() => {
   return cells.length ? Math.max(...cells.map((c) => c.ms), 1) : 1
 })
 
+/** 单柱高度：只按当天时长相对 weekMaxMs 比例，所有天同一 scale（基准 80px） */
+function weekBarHeight(day) {
+  if (!weekMaxMs.value || !day.ms) return 0
+  return Math.round((day.ms / weekMaxMs.value) * 80)
+}
+
+/** 单段最小高度：在该柱高度内能容纳 n 段；最多 14px，多项目时按 barHeight/n 缩小，保证不溢出 */
+function weekSegMinHeight(day, segmentCount) {
+  const barH = weekBarHeight(day)
+  const n = segmentCount ?? day.byProject?.length ?? 0
+  if (n === 0) return 0
+  const fit = barH / n
+  return Math.min(14, Math.max(2, Math.floor(fit)))
+}
+
 const weekProjectOrder = computed(() => {
   const order = []
   const seen = new Set()
@@ -427,6 +448,12 @@ const weekProjectOrder = computed(() => {
 
 function weekProjectColorIndex(projectId) {
   const idx = weekProjectOrder.value.indexOf(projectId)
+  return idx >= 0 ? idx % weekProjectColors.length : 0
+}
+
+/** 柱状图内 segment 颜色：与 weekChartLegendItems 顺序一致 */
+function weekChartColorIndex(projectId) {
+  const idx = weekChartLegendItems.value.findIndex((item) => item.projectId === projectId)
   return idx >= 0 ? idx % weekProjectColors.length : 0
 }
 
@@ -455,6 +482,49 @@ const weekProjectTotals = computed(() => {
   }
   return [...map.values()].sort((a, b) => b.ms - a.ms)
 })
+
+/** 周内按总时长排序的 Top N 项目 id，柱状图与图例只显示这些 + 其他 */
+const weekTopProjectIds = computed(() =>
+  weekProjectTotals.value.slice(0, WEEK_CHART_TOP_N).map((p) => p.projectId),
+)
+
+/** 柱状图图例：Top N + 其他（仅当本周有「其他」时显示） */
+const weekChartLegendItems = computed(() => {
+  const top = weekTopProjectIds.value.map((id) => {
+    const t = weekProjectTotals.value.find((p) => p.projectId === id)
+    return {
+      projectId: id,
+      name: t?.name ?? id,
+      color: weekProjectColors[weekProjectColorIndex(id)] ?? weekProjectColors[0],
+    }
+  })
+  const hasOther = weekDayCells.value.some((day) => {
+    const topMs = weekTopProjectIds.value.reduce(
+      (sum, id) => sum + (day.byProject.find((p) => p.projectId === id)?.ms ?? 0),
+      0,
+    )
+    return day.ms > topMs
+  })
+  if (!hasOther) return top
+  return [
+    ...top,
+    { projectId: '__other', name: '其他', color: weekProjectColors[weekProjectColors.length - 1] },
+  ]
+})
+
+/** 单日柱内显示的 segment：Top N（按周总时长顺序，仅含当日有时长的）+ 其他。保证每柱最多 N+1 段。 */
+function weekChartSegments(day) {
+  const topIds = weekTopProjectIds.value
+  const segments = topIds
+    .map((id) => day.byProject.find((p) => p.projectId === id))
+    .filter((p) => p && p.ms > 0)
+  const topMs = segments.reduce((a, p) => a + p.ms, 0)
+  const otherMs = day.ms - topMs
+  if (otherMs > 0) {
+    segments.push({ projectId: '__other', name: '其他', ms: otherMs })
+  }
+  return segments
+}
 
 const weekProjectTotalsWithPercent = computed(() => {
   const total = weekTotalMs.value
