@@ -51,7 +51,7 @@
   flex: 1;
   padding: 0.5rem 1rem;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   border-radius: var(--radius);
   min-height: var(--touch-min);
   display: flex;

@@ -60,7 +60,7 @@ const version = __APP_VERSION__
 
 .page-title {
   margin: 0 0 1rem;
-  font-size: 1.5rem;
+  font-size: var(--fs-page-title);
   font-weight: 700;
 }
 
@@ -70,32 +70,32 @@ const version = __APP_VERSION__
 
 .section-title {
   margin: 0 0 0.5rem;
-  font-size: 1.15rem;
+  font-size: var(--fs-section-title);
   font-weight: 700;
 }
 
 .intro,
 .tip {
   margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
 }
 
 .warning {
   margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--danger);
 }
 
 .sub-title {
   margin: 0.75rem 0 0.25rem;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   font-weight: 600;
 }
 
 .steps {
   margin: 0 0 0.5rem 1.2rem;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
 }
 
 .steps li {
@@ -105,7 +105,7 @@ const version = __APP_VERSION__
 .list {
   margin: 0 0 0.5rem 1.2rem;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
 }
 
 .list li {
@@ -114,7 +114,7 @@ const version = __APP_VERSION__
 
 .version {
   margin: 2rem 0 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
 }
 </style>

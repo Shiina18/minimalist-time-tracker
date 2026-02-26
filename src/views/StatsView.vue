@@ -832,7 +832,7 @@ onMounted(() => {
 
 .page-title {
   margin: 0 0 0.25rem;
-  font-size: 1.35rem;
+  font-size: var(--fs-page-title);
   font-weight: 600;
 }
 
@@ -844,7 +844,7 @@ onMounted(() => {
 
 .tab {
   padding: 0.5rem 1rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -873,13 +873,13 @@ onMounted(() => {
 }
 
 .range-label-text {
-  font-size: 0.85rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
 .range-input {
   padding: 0.5rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -888,7 +888,7 @@ onMounted(() => {
 
 .week-label {
   margin: 0 0 1rem;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
@@ -901,7 +901,7 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
   margin-bottom: 0.75rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
 }
 
@@ -971,7 +971,7 @@ onMounted(() => {
 }
 
 .week-chart-seg-text {
-  font-size: 0.55rem;
+  font-size: var(--fs-caption-sm);
   font-variant-numeric: tabular-nums;
   color: var(--text);
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
@@ -981,13 +981,13 @@ onMounted(() => {
 }
 
 .week-chart-duration {
-  font-size: 0.7rem;
+  font-size: var(--fs-caption-sm);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .week-chart-label {
-  font-size: 0.7rem;
+  font-size: var(--fs-caption-sm);
   color: var(--text-muted);
   text-align: center;
   line-height: 1.2;
@@ -1018,7 +1018,7 @@ onMounted(() => {
 .week-project-info {
   display: flex;
   justify-content: space-between;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .week-project-name {
@@ -1044,7 +1044,7 @@ onMounted(() => {
   display: inline-block;
   min-width: 4ch;
   text-align: right;
-  font-size: 0.85em;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
@@ -1075,13 +1075,13 @@ onMounted(() => {
 }
 
 .week-notes-date {
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
 
 .week-notes-text {
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -1102,7 +1102,7 @@ onMounted(() => {
 
 .nav-btn {
   padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--accent);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1118,7 +1118,7 @@ onMounted(() => {
 
 .month-label {
   margin: 0 0 1rem;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
@@ -1137,7 +1137,7 @@ onMounted(() => {
 
 .year-label {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
@@ -1162,17 +1162,17 @@ onMounted(() => {
 
 .stat-value {
   display: block;
-  font-size: 1.5rem;
+  font-size: var(--fs-stat-number);
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
 }
 
 .section-title {
   margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -1194,13 +1194,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: var(--fs-caption-sm);
   min-height: 0;
 }
 
 .calendar-head {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--fs-caption-sm);
   aspect-ratio: auto;
   min-height: 24px;
 }
@@ -1239,7 +1239,7 @@ onMounted(() => {
 }
 
 .cell-duration {
-  font-size: 0.65rem;
+  font-size: var(--fs-caption-sm);
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -1265,7 +1265,7 @@ onMounted(() => {
 
 .year-month-label {
   width: 28px;
-  font-size: 0.7rem;
+  font-size: var(--fs-caption-sm);
   line-height: 1;
   color: var(--text-muted);
   flex-shrink: 0;
@@ -1340,7 +1340,7 @@ onMounted(() => {
 .project-info {
   display: flex;
   justify-content: space-between;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .project-name {

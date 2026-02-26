@@ -92,7 +92,7 @@ onMounted(load)
 
 .page-title {
   margin: 0 0 1rem;
-  font-size: 1.35rem;
+  font-size: var(--fs-page-title);
   font-weight: 600;
 }
 
@@ -117,7 +117,7 @@ onMounted(load)
 
 .date-group-title {
   margin: 0 0 0.5rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -157,12 +157,12 @@ onMounted(load)
 
 .session-duration {
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .session-note-summary {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;

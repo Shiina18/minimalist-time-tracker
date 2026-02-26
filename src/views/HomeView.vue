@@ -384,15 +384,17 @@ onUnmounted(() => {
 }
 
 .hero-label {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: var(--fs-hero);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--accent);
+  text-align: center;
 }
 
 .hero-hint {
   margin: 0;
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: var(--fs-body-sm);
 }
 
 /* 有 session 时计时界面：限制在一屏内，禁止整页滚动（避免刷新后出现纵向滚动条） */
@@ -416,7 +418,7 @@ onUnmounted(() => {
 
 .timer-value {
   margin: 0;
-  font-size: 5.5rem;
+  font-size: var(--fs-timer);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -432,7 +434,7 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   background: var(--surface);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .current-project-label {
@@ -455,7 +457,7 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   background: var(--surface);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   color: var(--text);
   cursor: text;
   border: 1px solid var(--border);
@@ -494,7 +496,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   font-weight: 600;
   background: var(--danger);
   color: white;
@@ -536,7 +538,7 @@ onUnmounted(() => {
   color: var(--text);
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   z-index: 200;
   max-width: 90%;
   text-align: center;

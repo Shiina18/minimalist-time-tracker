@@ -93,7 +93,7 @@ async function createAndStart() {
 
 .picker-title {
   margin: 0 0 1rem;
-  font-size: 1.1rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
 }
 
@@ -107,7 +107,7 @@ async function createAndStart() {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--text-muted);
   cursor: pointer;
   margin-bottom: 1rem;
@@ -137,14 +137,14 @@ async function createAndStart() {
   padding: 1rem;
   text-align: left;
   color: var(--text);
-  font-size: 1rem;
+  font-size: var(--fs-body);
   min-height: var(--touch-min);
 }
 
 .picker-empty {
   padding: 1rem;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .picker-close {

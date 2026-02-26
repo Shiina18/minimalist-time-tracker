@@ -12,6 +12,16 @@
   --radius: 12px;
   --touch-min: 48px;
   --font-sans: system-ui, -apple-system, sans-serif;
+  /* Typography scale */
+  --fs-hero: clamp(3rem, 20vw, 5rem);
+  --fs-timer: 5.5rem;
+  --fs-stat-number: 1.5rem;
+  --fs-page-title: 1.4rem;
+  --fs-body: 1rem;
+  --fs-section-title: var(--fs-body);
+  --fs-body-sm: var(--fs-body);
+  --fs-caption: 0.8rem;
+  --fs-caption-sm: var(--fs-caption);
 }
 
 * {
@@ -21,6 +31,7 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
+  line-height: 1.5;
   background: var(--bg);
   color: var(--text);
   min-height: 100dvh;
@@ -55,7 +66,7 @@ button {
 
 input, select, textarea {
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   color: var(--text);
   accent-color: var(--accent);
 }

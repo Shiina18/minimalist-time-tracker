@@ -135,7 +135,7 @@ onMounted(load)
 
 .page-title {
   margin: 0 0 1rem;
-  font-size: 1.35rem;
+  font-size: var(--fs-page-title);
   font-weight: 600;
 }
 
@@ -153,7 +153,7 @@ onMounted(load)
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -177,7 +177,7 @@ onMounted(load)
 
 .section-title {
   margin: 0 0 0.5rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
   color: var(--text-muted);
   display: flex;
@@ -186,7 +186,7 @@ onMounted(load)
 }
 
 .section-toggle {
-  font-size: 0.8rem;
+  font-size: var(--fs-caption);
 }
 
 .list {
@@ -224,7 +224,7 @@ onMounted(load)
 
 .btn-icon {
   padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--accent);
   min-height: var(--touch-min);
 }
@@ -236,7 +236,7 @@ onMounted(load)
 .list-empty {
   padding: 1rem;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .btn {
@@ -280,7 +280,7 @@ onMounted(load)
 
 .modal h3 {
   margin: 0 0 1rem;
-  font-size: 1.1rem;
+  font-size: var(--fs-section-title);
 }
 
 .modal .add-input {

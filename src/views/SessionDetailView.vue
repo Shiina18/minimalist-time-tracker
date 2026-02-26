@@ -432,7 +432,7 @@ async function removeSession() {
 
 .meta-row label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
@@ -447,7 +447,7 @@ async function removeSession() {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 .date-time-row {
@@ -462,7 +462,7 @@ async function removeSession() {
 .add-segment-btn {
   margin-top: 0.5rem;
   width: 100%;
-  font-size: 1.05rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
   color: var(--accent);
   border: 2px solid var(--accent);
@@ -475,7 +475,7 @@ async function removeSession() {
 
 .duration {
   margin: 0.75rem 0 0;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   color: var(--text-muted);
 }
 
@@ -489,7 +489,7 @@ async function removeSession() {
   padding: 0.5rem 1rem;
   background: var(--surface);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   color: var(--text);
   cursor: text;
   border: 1px solid var(--border);
@@ -513,7 +513,7 @@ async function removeSession() {
 
 .segments-title {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -546,7 +546,7 @@ async function removeSession() {
 }
 
 .segment-time {
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--text-muted);
 }
 
@@ -557,7 +557,7 @@ async function removeSession() {
 
 .btn-icon {
   padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--accent);
   min-height: var(--touch-min);
 }
@@ -587,7 +587,7 @@ async function removeSession() {
 
 .modal h3 {
   margin: 0 0 1rem;
-  font-size: 1.1rem;
+  font-size: var(--fs-section-title);
 }
 
 .modal-actions {
@@ -621,7 +621,7 @@ async function removeSession() {
   color: var(--text);
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   z-index: 200;
   max-width: 90%;
   text-align: center;

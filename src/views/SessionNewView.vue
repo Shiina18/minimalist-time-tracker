@@ -158,7 +158,7 @@ onMounted(async () => {
 
 .page-title {
   margin: 0 0 1rem;
-  font-size: 1.35rem;
+  font-size: var(--fs-page-title);
   font-weight: 600;
 }
 
@@ -176,7 +176,7 @@ onMounted(async () => {
 
 .meta-row label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
@@ -201,14 +201,14 @@ onMounted(async () => {
 
 .section-title {
   margin: 0 0 0.25rem;
-  font-size: 1rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .hint {
   margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--text-muted);
 }
 
@@ -244,7 +244,7 @@ onMounted(async () => {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
   width: 100%;
-  font-size: 1.05rem;
+  font-size: var(--fs-section-title);
   font-weight: 600;
   color: var(--accent);
   border: 2px solid var(--accent);
@@ -290,7 +290,7 @@ onMounted(async () => {
   color: var(--text);
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--fs-caption);
   z-index: 200;
   max-width: 90%;
   text-align: center;
