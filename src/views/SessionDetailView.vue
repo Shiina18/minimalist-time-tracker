@@ -38,22 +38,24 @@
         </div>
         <div class="meta-row">
           <label>备注</label>
-          <div
-            v-if="!editingNote"
-            class="note-display"
-            @click="editingNote = true; noteEditValue = (session.note || '').trim()"
-          >
-            {{ (session.note || '').trim() || '无' }}
+          <div class="note-block">
+            <div
+              v-if="!editingNote"
+              class="note-display"
+              @click="startEditNote"
+            >
+              {{ (session.note || '').trim() || '无' }}
+            </div>
+            <textarea
+              v-else
+              ref="noteInputRef"
+              v-model="noteEditValue"
+              class="note-textarea"
+              :maxlength="NOTE_MAX_LENGTH"
+              rows="3"
+              @blur="onNoteBlur"
+            />
           </div>
-          <textarea
-            v-else
-            ref="noteInputRef"
-            v-model="noteEditValue"
-            class="input note-textarea"
-            :maxlength="NOTE_MAX_LENGTH"
-            rows="3"
-            @blur="onNoteBlur"
-          />
         </div>
         <p class="duration">总时长 {{ formatDuration(sessionDuration) }}</p>
       </div>
@@ -107,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getSession,
@@ -202,6 +204,12 @@ async function onNoteBlur() {
 }
 
 watch(sessionId, load, { immediate: true })
+
+function startEditNote() {
+  noteEditValue.value = (session.value?.note ?? '').trim()
+  editingNote.value = true
+  nextTick(() => noteInputRef.value?.focus())
+}
 
 function sessionEndAtValue() {
   return fromDateAndTime(endDate.value, endTime.value) ?? session.value?.endAt ?? null
@@ -369,13 +377,16 @@ async function removeSession() {
 }
 
 .meta-row input,
-.select {
+.select,
+.modal input,
+.modal .select {
   width: 100%;
-  padding: 0.6rem;
-  background: var(--bg);
+  padding: 0.5rem 1rem;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
+  font-size: 0.95rem;
 }
 
 .date-time-row {
@@ -407,18 +418,34 @@ async function removeSession() {
   color: var(--text-muted);
 }
 
+.note-block {
+  width: 100%;
+}
+
 .note-display {
   white-space: pre-wrap;
   min-height: 2.5rem;
-  padding: 0.6rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  background: var(--surface);
   border-radius: var(--radius);
+  font-size: 0.95rem;
   color: var(--text);
   cursor: text;
+  border: 1px solid var(--border);
+}
+
+.note-display:hover {
+  border-color: var(--accent);
 }
 
 .note-textarea {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
   resize: vertical;
   min-height: 4em;
 }
