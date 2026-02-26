@@ -9,7 +9,7 @@ export function formatDuration(ms) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-/** 短格式：用于列表/统计。单位前统一加空格，如 "11 m"、"1.6 h"。
+/** 短格式：用于列表/统计。数字与单位间用细空格，如 "11 m"、"1.6 h"。
  * - 小于 1 分钟显示 0
  * - 1 分钟以上不足 1 小时显示 X m
  * - 1 小时及以上显示小数点小时，如 1.6 h
@@ -17,9 +17,9 @@ export function formatDuration(ms) {
 export function formatDurationShort(ms) {
   if (ms < 60000) return '0'
   const min = Math.floor(ms / 60000)
-  if (min < 60) return `${min} m`
+  if (min < 60) return `${min}\u2009m`
   const h = ms / 3600000
-  return `${h.toFixed(1)} h`
+  return `${h.toFixed(1)}\u2009h`
 }
 
 /** 仅分钟数（四舍五入），用于柱状图等节约空间，不写单位，统一视为 min */
