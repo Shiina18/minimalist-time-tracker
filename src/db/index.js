@@ -27,7 +27,12 @@ function genId() {
 // --- Projects ---
 export async function getAllProjects() {
   const db = await getDB()
-  return db.getAll('projects')
+  const all = await db.getAll('projects')
+  return all.sort((a, b) => {
+    const aTs = a.updatedAt ?? a.createdAt ?? 0
+    const bTs = b.updatedAt ?? b.createdAt ?? 0
+    return bTs - aTs
+  })
 }
 
 export async function getProjects(archived = false) {
@@ -52,6 +57,7 @@ export async function addProject({ name, archived = false, defaultStart = false 
     id: genId(),
     name,
     createdAt: Date.now(),
+    updatedAt: Date.now(),
     archived,
     defaultStart: defaultStart || false,
   }
@@ -69,7 +75,10 @@ export async function updateProject(id, patch) {
       if (p.id !== id && p.defaultStart) await updateProject(p.id, { defaultStart: false })
     }
   }
-  const updated = { ...project, ...patch }
+  const base = { ...project, ...patch }
+  const keys = Object.keys(patch ?? {})
+  const shouldTouchUpdatedAt = keys.some((k) => k !== 'archived')
+  const updated = shouldTouchUpdatedAt ? { ...base, updatedAt: Date.now() } : base
   await db.put('projects', updated)
   return updated
 }
