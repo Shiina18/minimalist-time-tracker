@@ -103,6 +103,7 @@
           </div>
         </div>
       </div>
+      <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
     </template>
     <p v-else class="empty">记录不存在</p>
   </div>
@@ -120,8 +121,10 @@ import {
   addSegment,
   deleteSegment,
   deleteSession,
+  getSessionsOverlapping,
 } from '../db/index.js'
 import { formatDuration, formatDurationShort } from '../utils/format.js'
+import { computeSessionDurationMs } from '../utils/stats.js'
 import { toDateInputValue, toTimeInputValue, fromDateAndTime } from '../utils/datetime.js'
 import { NOTE_MAX_LENGTH } from '../constants.js'
 
@@ -131,6 +134,8 @@ const session = ref(null)
 const segments = ref([])
 const allProjects = ref([])
 const loading = ref(true)
+const toastMessage = ref('')
+let toastTimer = null
 const editingNote = ref(false)
 const noteEditValue = ref('')
 const noteInputRef = ref(null)
@@ -153,9 +158,19 @@ const sessionId = computed(() => route.params.id)
 
 const sessionDuration = computed(() => {
   if (!session.value) return 0
-  const end = session.value.endAt ?? session.value.startAt
-  return end - session.value.startAt
+  return computeSessionDurationMs(session.value, segments.value, Date.now())
 })
+
+function showToast(message) {
+  toastMessage.value = message
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+  }
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimer = null
+  }, 3000)
+}
 
 function projectName(projectId) {
   if (!projectId) return '（未归类）'
@@ -220,10 +235,17 @@ function onStartDateChange(e) {
   if (v == null || !session.value) return
   const endAt = sessionEndAtValue()
   if (endAt != null && v >= endAt) {
-    alert('开始时间须早于结束时间')
+    showToast('结束须晚于开始')
     return
   }
-  updateSession(session.value.id, { startAt: v }).then(load)
+  const rangeEnd = endAt ?? Date.now()
+  getSessionsOverlapping(v, rangeEnd, session.value.id).then((overlapping) => {
+    if (overlapping.length > 0) {
+      showToast('与已有记录重叠')
+      return
+    }
+    updateSession(session.value.id, { startAt: v }).then(load)
+  })
 }
 
 function onStartTimeChange(e) {
@@ -231,30 +253,53 @@ function onStartTimeChange(e) {
   if (v == null || !session.value) return
   const endAt = sessionEndAtValue()
   if (endAt != null && v >= endAt) {
-    alert('开始时间须早于结束时间')
+    showToast('结束须晚于开始')
     return
   }
-  updateSession(session.value.id, { startAt: v }).then(load)
+  const rangeEnd = endAt ?? Date.now()
+  getSessionsOverlapping(v, rangeEnd, session.value.id).then((overlapping) => {
+    if (overlapping.length > 0) {
+      showToast('与已有记录重叠')
+      return
+    }
+    updateSession(session.value.id, { startAt: v }).then(load)
+  })
 }
 
 function onEndDateChange(e) {
   const v = fromDateAndTime(e.target.value, endTime.value)
   if (!session.value) return
   if (v != null && session.value.startAt >= v) {
-    alert('开始时间须早于结束时间')
+    showToast('结束须晚于开始')
     return
   }
-  updateSession(session.value.id, { endAt: v || null }).then(load)
+  const startAt = fromDateAndTime(startDate.value, startTime.value) ?? session.value.startAt
+  const rangeEnd = v ?? Date.now()
+  getSessionsOverlapping(startAt, rangeEnd, session.value.id).then((overlapping) => {
+    if (overlapping.length > 0) {
+      showToast('与已有记录重叠')
+      return
+    }
+    updateSession(session.value.id, { endAt: v || null }).then(load)
+  })
 }
 
 function onEndTimeChange(e) {
   const v = fromDateAndTime(endDate.value, e.target.value)
   if (!session.value) return
   if (v != null && session.value.startAt >= v) {
-    alert('开始时间须早于结束时间')
+    showToast('结束须晚于开始')
     return
   }
-  updateSession(session.value.id, { endAt: v || null }).then(load)
+  const startAt = fromDateAndTime(startDate.value, startTime.value) ?? session.value.startAt
+  const rangeEnd = v ?? Date.now()
+  getSessionsOverlapping(startAt, rangeEnd, session.value.id).then((overlapping) => {
+    if (overlapping.length > 0) {
+      showToast('与已有记录重叠')
+      return
+    }
+    updateSession(session.value.id, { endAt: v || null }).then(load)
+  })
 }
 
 function startEditSegment(seg) {
@@ -288,21 +333,33 @@ function closeSegmentModal() {
   addingSegment.value = false
 }
 
+function segmentsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd
+}
+
 async function saveSegmentModal() {
   const form = editSegmentForm.value
   const startAt = fromDateAndTime(form.startDate, form.startTime)
   const endAt = fromDateAndTime(form.endDate, form.endTime)
   if (startAt == null) return
   const segEnd = endAt ?? startAt
-  if (segEnd < startAt) {
-    alert('时间段的开始须早于或等于结束')
+  if (segEnd <= startAt) {
+    showToast('结束须晚于开始')
     return
   }
   const sessionStart = session.value.startAt
   const sessionEnd = session.value.endAt ?? Infinity
   if (startAt < sessionStart || segEnd > sessionEnd) {
-    alert('时间段须在记录的开始与结束时间范围内')
+    showToast('须在记录时间范围内')
     return
+  }
+  const others = segments.value.filter((seg) => seg.id !== (editingSegment.value?.id ?? null))
+  for (const seg of others) {
+    const otherEnd = seg.endAt != null ? seg.endAt : sessionEnd
+    if (segmentsOverlap(startAt, segEnd, seg.startAt, otherEnd)) {
+      showToast('与同条记录内其他段重叠')
+      return
+    }
   }
   if (addingSegment.value && session.value) {
     await addSegment({
@@ -330,6 +387,10 @@ async function doDeleteSegment(seg) {
   if (!confirm('删除此时间段？')) return
   await deleteSegment(seg.id)
   await load()
+  if (segments.value.length === 0 && session.value) {
+    await deleteSession(session.value.id)
+    router.push('/sessions')
+  }
 }
 
 async function removeSession() {
@@ -549,5 +610,20 @@ async function removeSession() {
 
 .btn-ghost {
   color: var(--text-muted);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--touch-min) + 1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--text);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
 }
 </style>

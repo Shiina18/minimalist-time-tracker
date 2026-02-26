@@ -39,13 +39,14 @@
       <RouterLink to="/sessions" class="btn btn-ghost">取消</RouterLink>
       <button type="button" class="btn btn-primary" :disabled="!canSave" @click="save">保存</button>
     </div>
+    <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { addSession, addSegment, getProjects } from '../db/index.js'
+import { addSession, addSegment, getProjects, getSessionsOverlapping } from '../db/index.js'
 import { NOTE_MAX_LENGTH } from '../constants.js'
 
 const router = useRouter()
@@ -54,11 +55,13 @@ const startAtLocal = ref('')
 const endAtLocal = ref('')
 const note = ref('')
 const segmentRows = ref([])
+const toastMessage = ref('')
+let toastTimer = null
 
 const canSave = computed(() => {
   const start = toTs(startAtLocal.value)
   const end = toTs(endAtLocal.value)
-  return start != null && end != null && start < end
+  return start != null && end != null
 })
 
 function toTs(local) {
@@ -70,24 +73,50 @@ function addSegmentRow() {
   segmentRows.value.push({ projectId: null, startLocal: startAtLocal.value, endLocal: endAtLocal.value })
 }
 
+function showToast(message) {
+  toastMessage.value = message
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+  }
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimer = null
+  }, 3000)
+}
+
 async function save() {
   const startAt = toTs(startAtLocal.value)
   const endAt = toTs(endAtLocal.value)
-  if (startAt == null || endAt == null || startAt >= endAt) return
+  if (startAt == null || endAt == null || endAt <= startAt) {
+    showToast('结束须晚于开始')
+    return
+  }
   if (segmentRows.value.length > 0) {
-    for (const row of segmentRows.value) {
-      const segStart = toTs(row.startLocal)
-      const segEnd = toTs(row.endLocal)
-      if (segStart == null || segEnd == null) continue
-      if (segStart > segEnd) {
-        alert('时间段的开始须早于或等于结束')
+    const sorted = [...segmentRows.value]
+      .map((row) => ({ ...row, start: toTs(row.startLocal), end: toTs(row.endLocal) }))
+      .filter((r) => r.start != null && r.end != null)
+    for (const r of sorted) {
+      if (r.end <= r.start) {
+        showToast('结束须晚于开始')
         return
       }
-      if (segStart < startAt || segEnd > endAt) {
-        alert('时间段须在记录的开始与结束时间范围内')
+      if (r.start < startAt || r.end > endAt) {
+        showToast('须在记录时间范围内')
         return
       }
     }
+    sorted.sort((a, b) => a.start - b.start)
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (sorted[i].end > sorted[i + 1].start) {
+        showToast('时间段不能重叠')
+        return
+      }
+    }
+  }
+  const overlapping = await getSessionsOverlapping(startAt, endAt, null)
+  if (overlapping.length > 0) {
+    showToast('与已有记录重叠')
+    return
   }
   const noteTrimmed = note.value.trim()
   const session = await addSession({ startAt, endAt, note: noteTrimmed })
@@ -97,7 +126,7 @@ async function save() {
     for (const row of segmentRows.value) {
       const segStart = toTs(row.startLocal)
       const segEnd = toTs(row.endLocal)
-      if (segStart != null && segEnd != null && segStart <= segEnd) {
+      if (segStart != null && segEnd != null && segEnd > segStart) {
         await addSegment({
           sessionId: session.id,
           projectId: row.projectId || null,
@@ -250,5 +279,20 @@ onMounted(async () => {
 
 .btn-ghost {
   color: var(--text-muted);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--touch-min) + 1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--text);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
 }
 </style>

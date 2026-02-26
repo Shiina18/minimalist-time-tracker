@@ -25,10 +25,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getSessionsByStartDesc } from '../db/index.js'
+import { getSessionsByStartDesc, getAllSegments } from '../db/index.js'
 import { formatDate, formatDurationShort } from '../utils/format.js'
+import { computeSessionDurationMs } from '../utils/stats.js'
 
 const sessions = ref([])
+const segmentsBySessionId = ref(new Map())
 const loading = ref(true)
 
 const byDate = computed(() => {
@@ -42,8 +44,8 @@ const byDate = computed(() => {
 })
 
 function sessionDuration(s) {
-  const end = s.endAt ?? s.startAt
-  return end - s.startAt
+  const segs = segmentsBySessionId.value.get(s.id) ?? []
+  return computeSessionDurationMs(s, segs, Date.now())
 }
 
 function formatTimeRange(start, end) {
@@ -63,7 +65,20 @@ function noteSummary(note, maxLen = 40) {
 
 async function load() {
   loading.value = true
-  sessions.value = await getSessionsByStartDesc()
+  const [sessList, allSegments] = await Promise.all([
+    getSessionsByStartDesc(),
+    getAllSegments(),
+  ])
+  sessions.value = sessList
+  const bySession = new Map()
+  for (const seg of allSegments) {
+    if (!bySession.has(seg.sessionId)) bySession.set(seg.sessionId, [])
+    bySession.get(seg.sessionId).push(seg)
+  }
+  for (const [, segs] of bySession) {
+    segs.sort((a, b) => a.startAt - b.startAt)
+  }
+  segmentsBySessionId.value = bySession
   loading.value = false
 }
 

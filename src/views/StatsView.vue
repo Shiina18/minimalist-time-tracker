@@ -288,7 +288,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getAllSessions, getSegmentsBySessionId, getAllProjects } from '../db/index.js'
 import { formatDate, formatDuration, formatDurationShort, formatDurationMinutes } from '../utils/format.js'
 import {
-  aggregateMsByDay,
+  aggregateMsByDayFromSegments,
   getMonthBounds,
   getYearBounds,
   getLast7DaysBounds,
@@ -327,7 +327,13 @@ const weekBounds = computed(() => {
 
 const dailyByWeek = computed(() => {
   const { start, end } = weekBounds.value
-  return aggregateMsByDay(sessions.value, start, end, Date.now())
+  return aggregateMsByDayFromSegments(
+    sessions.value,
+    sessionSegments.value,
+    start,
+    end,
+    Date.now(),
+  )
 })
 
 const weekRecordDays = computed(() =>
@@ -564,8 +570,9 @@ const yearBounds = computed(() => {
 
 const dailyByMonth = computed(() => {
   const { start, end } = monthBounds.value
-  return aggregateMsByDay(
+  return aggregateMsByDayFromSegments(
     sessions.value,
+    sessionSegments.value,
     start,
     end,
     Date.now(),
@@ -574,8 +581,9 @@ const dailyByMonth = computed(() => {
 
 const dailyByYear = computed(() => {
   const { start, end } = yearBounds.value
-  return aggregateMsByDay(
+  return aggregateMsByDayFromSegments(
     sessions.value,
+    sessionSegments.value,
     start,
     end,
     Date.now(),

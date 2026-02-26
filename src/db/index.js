@@ -96,6 +96,17 @@ export async function getSessionsByStartDesc() {
   return all.sort((a, b) => b.startAt - a.startAt)
 }
 
+/** 与 [startAt, endAt] 重叠的 session（已结束用 [s.startAt, s.endAt]，进行中用 [s.startAt, now]）。excludeSessionId 排除不参与检查。 */
+export async function getSessionsOverlapping(startAt, endAt, excludeSessionId = null) {
+  const all = await getAllSessions()
+  const now = Date.now()
+  return all.filter((s) => {
+    if (excludeSessionId != null && s.id === excludeSessionId) return false
+    const sEnd = s.endAt != null ? s.endAt : now
+    return startAt < sEnd && s.startAt < endAt
+  })
+}
+
 export async function getSession(id) {
   const db = await getDB()
   return db.get('sessions', id)
@@ -146,6 +157,11 @@ export async function deleteSession(id) {
 }
 
 // --- Segments ---
+export async function getAllSegments() {
+  const db = await getDB()
+  return db.getAll('segments')
+}
+
 export async function getSegmentsBySessionId(sessionId) {
   const db = await getDB()
   const all = await db.getAll('segments')
