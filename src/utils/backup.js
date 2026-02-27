@@ -55,15 +55,18 @@ export async function exportViaShareOrDownload() {
     }
 
     if (canShareFiles && file) {
+      let shared = false
       try {
         await navigator.share({
           files: [file],
           title: '极简时间记录备份',
           text: '备份自 minimalist-time-tracker',
         })
+        shared = true
       } catch {
+        shared = false
       }
-      return
+      if (shared) return
     }
   }
 
