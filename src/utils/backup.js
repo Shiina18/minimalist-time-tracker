@@ -42,20 +42,29 @@ export async function exportViaShareOrDownload() {
   const blob = await createBackupBlob()
   const filename = buildBackupFilename()
 
-  const supportsShare =
-    typeof navigator !== 'undefined' &&
-    'share' in navigator &&
-    'canShare' in navigator &&
-    navigator.canShare({ files: [new File([blob], filename, { type: 'application/json' })] })
+  if (typeof navigator !== 'undefined' && 'share' in navigator) {
+    let file = null
+    let canShareFiles = false
+    if (typeof File !== 'undefined' && 'canShare' in navigator) {
+      try {
+        file = new File([blob], filename, { type: 'application/json' })
+        canShareFiles = navigator.canShare({ files: [file] })
+      } catch {
+        canShareFiles = false
+      }
+    }
 
-  if (supportsShare) {
-    const file = new File([blob], filename, { type: 'application/json' })
-    await navigator.share({
-      files: [file],
-      title: '极简时间记录备份',
-      text: '备份自 minimalist-time-tracker',
-    })
-    return
+    if (canShareFiles && file) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: '极简时间记录备份',
+          text: '备份自 minimalist-time-tracker',
+        })
+      } catch {
+      }
+      return
+    }
   }
 
   const url = URL.createObjectURL(blob)
