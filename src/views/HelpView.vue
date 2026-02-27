@@ -5,7 +5,7 @@
     <section class="section">
       <h2 class="section-title">安装到手机主屏幕</h2>
       <p class="intro">
-        推荐把本应用作为 PWA 安装到手机主屏幕, 像普通 App 一样使用。
+        极简时间记录: 原本为记录练琴时间开发, 只支持一个主项目, 可在计时中快速切换不同项目并统计各项目时长. 可以直接在浏览器中使用, 也支持安装为 PWA 离线使用, 数据仅存本地, 无需账号.
       </p>
 
       <h3 class="sub-title">iPhone (Safari)</h3>
@@ -45,12 +45,94 @@
       <p class="warning">注意: 清除数据后无法恢复, 请在确认不再需要这些记录时再操作。</p>
     </section>
 
+    <section class="section">
+      <h2 class="section-title">备份与恢复</h2>
+      <p class="tip">
+        你可以将所有时间记录导出为 JSON 备份文件, 保存到文件 App / 网盘或发给自己; 也可以从备份文件恢复数据。
+      </p>
+      <div class="backup-actions">
+        <button type="button" class="btn" @click="onExport">
+          导出数据
+        </button>
+        <button type="button" class="btn btn-secondary" @click="onImportClick">
+          导入数据
+        </button>
+        <input
+          ref="fileInputRef"
+          class="file-input"
+          type="file"
+          accept=".json,application/json"
+          @change="onFileChange"
+        />
+      </div>
+      <p class="tip">
+        导入会清空当前设备上本应用的所有记录, 并用备份文件内容完全替换; 此操作不可撤销, 请谨慎使用。
+      </p>
+    </section>
+
     <p class="version">v{{ version }}</p>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { exportViaShareOrDownload, importFromFile, hasActiveSession } from '../utils/backup.js'
+
 const version = __APP_VERSION__
+
+const fileInputRef = ref(null)
+
+async function onExport() {
+  const hasActive = await hasActiveSession()
+  if (hasActive) {
+    const ok = window.confirm('当前有未结束的记录, 本次导出不包含该记录, 是否继续?')
+    if (!ok) return
+  }
+  try {
+    await exportViaShareOrDownload()
+    window.alert('已发起导出, 请在系统的分享或下载界面完成保存。')
+  } catch (e) {
+    window.alert('导出失败, 请稍后再试。')
+  }
+}
+
+function onImportClick() {
+  if (!fileInputRef.value) return
+  fileInputRef.value.click()
+}
+
+async function onFileChange(event) {
+  const input = event.target
+  const [file] = input.files ?? []
+  input.value = ''
+  if (!file) return
+
+  const ok = window.confirm(
+    '导入会清空本地所有记录并用文件内容替换, 且无法恢复, 是否继续?',
+  )
+  if (!ok) return
+
+  try {
+    await importFromFile(file)
+    window.alert('导入成功, 将重新加载页面。')
+    window.location.reload()
+  } catch (e) {
+    const msg =
+      e && typeof e.message === 'string'
+        ? e.message
+        : ''
+    if (
+      msg === 'INVALID_APP' ||
+      msg === 'INVALID_VERSION' ||
+      msg === 'INVALID_STRUCTURE' ||
+      msg === 'INVALID_RELATIONS'
+    ) {
+      window.alert('导入失败: 备份文件格式不正确或已损坏, 请确认选择了正确的导出文件。')
+    } else {
+      window.alert('导入失败: 写入本地数据库时出现错误, 当前数据未被修改。')
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -110,6 +192,41 @@ const version = __APP_VERSION__
 
 .list li {
   margin-bottom: 0.25rem;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  min-height: var(--touch-min);
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .version {

@@ -1,5 +1,16 @@
 <template>
   <div class="app">
+    <div v-if="updateAvailable" class="update-banner">
+      <span class="update-text">发现新版本, 点击更新以应用最新功能。</span>
+      <div class="update-actions">
+        <button type="button" class="update-btn" @click="refreshApp">
+          立即更新
+        </button>
+        <button type="button" class="update-btn-secondary" @click="dismissUpdate">
+          稍后
+        </button>
+      </div>
+    </div>
     <main class="main">
       <RouterView />
     </main>
@@ -14,6 +25,36 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { onPwaUpdateAvailable } from './pwa.js'
+
+const updateAvailable = ref(false)
+let updateSW = null
+let stopListening = null
+
+onMounted(() => {
+  stopListening = onPwaUpdateAvailable((fn) => {
+    updateSW = fn
+    updateAvailable.value = true
+  })
+})
+
+onUnmounted(() => {
+  if (stopListening) {
+    stopListening()
+  }
+})
+
+async function refreshApp() {
+  if (updateSW) {
+    await updateSW(true)
+  }
+  window.location.reload()
+}
+
+function dismissUpdate() {
+  updateAvailable.value = false
+}
 </script>
 
 <style scoped>
@@ -30,6 +71,49 @@
   overflow: auto;
   padding: 1rem;
   padding-bottom: calc(var(--touch-min) + 1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.update-text {
+  font-size: var(--fs-body-sm);
+}
+
+.update-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.update-btn,
+.update-btn-secondary {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: var(--fs-caption);
+  min-height: 2rem;
+}
+
+.update-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.update-btn-secondary {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 .nav {
