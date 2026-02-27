@@ -68,16 +68,26 @@ export async function exportViaShareOrDownload() {
   }
 
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-  setTimeout(() => {
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, 30_000)
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent ?? '' : ''
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua)
+
+  if (isMobile) {
+    window.open(url, '_blank')
+    setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 30_000)
+  } else {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 30_000)
+  }
 }
 
 export async function hasActiveSession() {
