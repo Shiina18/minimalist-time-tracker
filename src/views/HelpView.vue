@@ -48,7 +48,7 @@
     <section class="section">
       <h2 class="section-title">备份与恢复</h2>
       <p class="tip">
-        你可以将所有时间记录导出为 JSON 备份文件, 保存到文件 App / 网盘或发给自己; 也可以从备份文件恢复数据。
+        你可以将所有时间记录导出为 JSON 备份文件(目前仅部分浏览器支持导出), 保存到文件 App / 网盘或发给自己; 也可以从备份文件恢复数据。
       </p>
       <div class="backup-actions">
         <button type="button" class="btn" @click="onExport">

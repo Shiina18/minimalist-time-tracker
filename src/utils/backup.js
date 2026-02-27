@@ -42,54 +42,17 @@ export async function exportViaShareOrDownload() {
   const blob = await createBackupBlob()
   const filename = buildBackupFilename()
 
-  if (typeof navigator !== 'undefined' && 'share' in navigator) {
-    let file = null
-    let canShareFiles = false
-    if (typeof File !== 'undefined' && 'canShare' in navigator) {
-      try {
-        file = new File([blob], filename, { type: 'application/json' })
-        canShareFiles = navigator.canShare({ files: [file] })
-      } catch {
-        canShareFiles = false
-      }
-    }
-
-    if (canShareFiles && file) {
-      let shared = false
-      try {
-        await navigator.share({
-          files: [file],
-          title: '极简时间记录备份',
-          text: '备份自 minimalist-time-tracker',
-        })
-        shared = true
-      } catch {
-        shared = false
-      }
-      if (shared) return
-    }
-  }
-
   const url = URL.createObjectURL(blob)
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent ?? '' : ''
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua)
-
-  if (isMobile) {
-    window.open(url, '_blank')
-    setTimeout(() => {
-      URL.revokeObjectURL(url)
-    }, 30_000)
-  } else {
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.style.display = 'none'
-    document.body.appendChild(a)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  try {
     a.click()
-    setTimeout(() => {
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    }, 30_000)
+  } finally {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 }
 
