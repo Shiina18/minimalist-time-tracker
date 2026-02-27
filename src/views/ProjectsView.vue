@@ -22,7 +22,17 @@
     <section class="section">
       <h2 class="section-title">进行中</h2>
       <ul class="list">
-        <li v-for="p in unarchived" :key="p.id" class="list-item">
+        <li
+          v-for="(p, index) in unarchived"
+          :key="p.id"
+          class="list-item"
+          draggable="true"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover.prevent="onDragOver($event)"
+          @drop="onDrop(index)"
+        >
+          <span class="drag-handle" aria-hidden="true">☰</span>
           <span class="item-name">{{ p.name }}</span>
           <div class="item-actions">
             <button type="button" class="btn-icon" title="编辑" @click="startEdit(p)">编辑</button>
@@ -82,9 +92,32 @@ const archivedOpen = ref(false)
 const editing = ref(null)
 const editName = ref('')
 const editDefaultStart = ref(false)
+const draggingIndex = ref(null)
 
-const unarchived = computed(() => projects.value.filter((p) => !p.archived))
-const archived = computed(() => projects.value.filter((p) => p.archived))
+function sortByUpdatedDesc(list) {
+  return [...list].sort((a, b) => {
+    const aTs = a.updatedAt ?? a.createdAt ?? 0
+    const bTs = b.updatedAt ?? b.createdAt ?? 0
+    return bTs - aTs
+  })
+}
+
+const unarchived = computed(() => {
+  const items = projects.value.filter((p) => !p.archived)
+  if (items.length === 0) return items
+  const byTime = sortByUpdatedDesc(items)
+  const indexById = new Map(byTime.map((p, idx) => [p.id, idx]))
+  return [...items].sort((a, b) => {
+    const aKey = a.manualOrder ?? indexById.get(a.id) ?? 0
+    const bKey = b.manualOrder ?? indexById.get(b.id) ?? 0
+    return aKey - bKey
+  })
+})
+
+const archived = computed(() => {
+  const items = projects.value.filter((p) => p.archived)
+  return sortByUpdatedDesc(items)
+})
 
 async function load() {
   projects.value = await getAllProjects()
@@ -122,6 +155,39 @@ async function toggleArchive(p) {
 async function remove(p) {
   if (!confirm(`删除「${p.name}」？历史记录中的总时长不受影响。`)) return
   await deleteProject(p.id)
+  await load()
+}
+
+function onDragStart(index, event) {
+  draggingIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function onDragEnd() {
+  draggingIndex.value = null
+}
+
+function onDragOver(event) {
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+async function onDrop(targetIndex) {
+  const from = draggingIndex.value
+  if (from == null || from === targetIndex) {
+    draggingIndex.value = null
+    return
+  }
+  const ordered = [...unarchived.value]
+  const [moved] = ordered.splice(from, 1)
+  ordered.splice(targetIndex, 0, moved)
+  draggingIndex.value = null
+  await Promise.all(
+    ordered.map((p, idx) => updateProject(p.id, { manualOrder: idx + 1 })),
+  )
   await load()
 }
 
@@ -214,6 +280,18 @@ onMounted(load)
 .item-name {
   flex: 1;
   min-width: 0;
+}
+
+.drag-handle {
+  width: 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+  cursor: grab;
+  user-select: none;
+}
+
+.list-item:active .drag-handle {
+  cursor: grabbing;
 }
 
 .item-actions {

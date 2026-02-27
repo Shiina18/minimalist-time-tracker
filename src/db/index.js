@@ -25,19 +25,32 @@ function genId() {
 }
 
 // --- Projects ---
-export async function getAllProjects() {
-  const db = await getDB()
-  const all = await db.getAll('projects')
-  return all.sort((a, b) => {
+function sortProjectsByUpdatedDesc(list) {
+  return [...list].sort((a, b) => {
     const aTs = a.updatedAt ?? a.createdAt ?? 0
     const bTs = b.updatedAt ?? b.createdAt ?? 0
     return bTs - aTs
   })
 }
 
+export async function getAllProjects() {
+  const db = await getDB()
+  const all = await db.getAll('projects')
+  return sortProjectsByUpdatedDesc(all)
+}
+
 export async function getProjects(archived = false) {
   const all = await getAllProjects()
-  return all.filter((p) => p.archived === archived)
+  const filtered = all.filter((p) => p.archived === archived)
+  if (archived) return sortProjectsByUpdatedDesc(filtered)
+  if (filtered.length === 0) return filtered
+  const byTime = sortProjectsByUpdatedDesc(filtered)
+  const indexById = new Map(byTime.map((p, idx) => [p.id, idx]))
+  return [...filtered].sort((a, b) => {
+    const aKey = a.manualOrder ?? indexById.get(a.id) ?? 0
+    const bKey = b.manualOrder ?? indexById.get(b.id) ?? 0
+    return aKey - bKey
+  })
 }
 
 export async function getProject(id) {
@@ -77,7 +90,7 @@ export async function updateProject(id, patch) {
   }
   const base = { ...project, ...patch }
   const keys = Object.keys(patch ?? {})
-  const shouldTouchUpdatedAt = keys.some((k) => k !== 'archived')
+  const shouldTouchUpdatedAt = keys.some((k) => k !== 'archived' && k !== 'manualOrder')
   const updated = shouldTouchUpdatedAt ? { ...base, updatedAt: Date.now() } : base
   await db.put('projects', updated)
   return updated
