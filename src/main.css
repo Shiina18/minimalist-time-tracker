@@ -127,8 +127,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* 数字等宽，避免时长/日期等数字跳动 */
 .stat-value,
-.week-chart-duration,
-.week-chart-seg-text,
 .week-total-duration,
 .week-total-percent,
 .cell-duration,

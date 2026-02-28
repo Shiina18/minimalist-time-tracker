@@ -78,37 +78,8 @@
             <span class="week-legend-name">{{ item.name }}</span>
           </span>
         </div>
-        <div class="week-chart">
-          <div
-            v-for="day in weekDayCells"
-            :key="day.key"
-            class="week-chart-day"
-          >
-            <div class="week-chart-bar-cell">
-              <div
-                class="week-chart-bar-wrap"
-                :style="{
-                  height: weekBarHeight(day) + 'px',
-                }"
-              >
-                <div
-                  v-for="p in weekChartSegments(day)"
-                  :key="p.projectId"
-                  class="week-chart-bar-seg"
-                  :style="{
-                    height: day.ms ? (p.ms / day.ms) * 100 + '%' : 0,
-                    minHeight: p.ms > 0 ? weekSegMinHeight(day, weekChartSegments(day).length) + 'px' : undefined,
-                    background: weekProjectColors[weekChartColorIndex(p.projectId)] ?? weekProjectColors[0],
-                  }"
-                  :title="p.ms > 0 ? formatDurationMinutes(p.ms) + ' ' + p.name : undefined"
-                >
-                  <span v-if="p.ms > 0 && weekSegMinHeight(day, weekChartSegments(day).length) >= 10" class="week-chart-seg-text">{{ formatDurationMinutes(p.ms) }}</span>
-                </div>
-              </div>
-              <span v-if="day.ms > 0" class="week-chart-duration">{{ formatDurationMinutes(day.ms) }}</span>
-            </div>
-            <span class="week-chart-label">{{ day.label }}</span>
-          </div>
+        <div class="week-chart-wrapper">
+          <Bar :data="weekChartData" :options="weekChartOptions" :plugins="weekChartPlugins" />
         </div>
         <div v-if="weekProjectTotals.length > 0" class="week-project-totals">
           <h2 class="section-title">各项目总时长</h2>
@@ -285,6 +256,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { getAllSessions, getSegmentsBySessionId, getAllProjects } from '../db/index.js'
 import { formatDate, formatDuration, formatDurationShort, formatDurationMinutes } from '../utils/format.js'
 import {
@@ -295,6 +277,10 @@ import {
   getRangeBounds,
 } from '../utils/stats.js'
 import { toDateInputValue } from '../utils/datetime.js'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
+
+const weekChartPlugins = [ChartDataLabels]
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -418,26 +404,6 @@ const weekDayCells = computed(() => {
   return cells
 })
 
-const weekMaxMs = computed(() => {
-  const cells = weekDayCells.value
-  return cells.length ? Math.max(...cells.map((c) => c.ms), 1) : 1
-})
-
-/** 单柱高度：只按当天时长相对 weekMaxMs 比例，所有天同一 scale（基准 80px） */
-function weekBarHeight(day) {
-  if (!weekMaxMs.value || !day.ms) return 0
-  return Math.round((day.ms / weekMaxMs.value) * 80)
-}
-
-/** 单段最小高度：在该柱高度内能容纳 n 段；最多 14px，多项目时按 barHeight/n 缩小，保证不溢出 */
-function weekSegMinHeight(day, segmentCount) {
-  const barH = weekBarHeight(day)
-  const n = segmentCount ?? day.byProject?.length ?? 0
-  if (n === 0) return 0
-  const fit = barH / n
-  return Math.min(14, Math.max(2, Math.floor(fit)))
-}
-
 const weekProjectOrder = computed(() => {
   const order = []
   const seen = new Set()
@@ -512,7 +478,7 @@ const weekChartLegendItems = computed(() => {
     return day.ms > topMs
   })
   if (!hasOther) return top
-  return [
+  return   [
     ...top,
     { projectId: '__other', name: '其他', color: weekProjectColors[weekProjectColors.length - 1] },
   ]
@@ -530,6 +496,58 @@ function weekChartSegments(day) {
     segments.push({ projectId: '__other', name: '其他', ms: otherMs })
   }
   return segments
+}
+
+/** Chart.js 周柱状图数据：堆叠柱，单位为分钟 */
+const weekChartData = computed(() => ({
+  labels: weekDayCells.value.map((d) => d.label),
+  datasets: weekChartLegendItems.value.map((item) => ({
+    label: item.name,
+    data: weekDayCells.value.map((day) => {
+      const seg = weekChartSegments(day).find((p) => p.projectId === item.projectId)
+      return seg ? Math.round(seg.ms / 60000) : 0
+    }),
+    backgroundColor: item.color,
+    stack: 'week',
+  })),
+}))
+
+const weekChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: { display: false },
+    datalabels: {
+      color: '#fff',
+      font: { size: 11, weight: 'bold' },
+      anchor: 'center',
+      align: 'center',
+      rotation: -90,
+      display(ctx) {
+        if (ctx.raw === 0) return false
+        const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex)
+        const el = meta?.data?.[ctx.dataIndex]
+        const h = el?.height
+        return typeof h === 'number' && h >= 18
+      },
+      formatter: (value) => String(value),
+    },
+  },
+  scales: {
+    x: { stacked: true },
+    y: {
+      stacked: true,
+      ticks: { display: false },
+      grid: { display: false },
+      border: { display: false },
+    },
+  },
+  tooltip: {
+    callbacks: {
+      label: (ctx) => formatDurationMinutes(ctx.raw * 60000) + ' ' + ctx.dataset.label,
+    },
+  },
 }
 
 const weekProjectTotalsWithPercent = computed(() => {
@@ -922,79 +940,10 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.week-chart {
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
+.week-chart-wrapper {
+  height: 220px;
+  width: 100%;
   padding-top: 0.25rem;
-}
-
-.week-chart-day {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-}
-
-.week-chart-bar-cell {
-  width: 100%;
-  min-height: 88px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem;
-}
-
-.week-chart-bar-wrap {
-  width: 100%;
-  max-width: 28px;
-  min-height: 4px;
-  display: flex;
-  flex-direction: column-reverse;
-  border-radius: 4px 4px 0 0;
-  overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.week-chart-bar-seg {
-  min-height: 2px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.week-chart-seg-text {
-  font-size: var(--fs-caption-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
-  transform: rotate(-90deg);
-  max-width: 999px;
-}
-
-.week-chart-duration {
-  font-size: var(--fs-caption-sm);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.week-chart-label {
-  font-size: var(--fs-caption-sm);
-  color: var(--text-muted);
-  text-align: center;
-  line-height: 1.2;
-  margin-top: 0.35rem;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .week-project-totals {
@@ -1265,11 +1214,12 @@ onMounted(() => {
 
 .year-month-label {
   width: 28px;
-  font-size: var(--fs-caption-sm);
+  font-size: 0.65rem;
   line-height: 1;
   color: var(--text-muted);
   flex-shrink: 0;
   text-align: right;
+  white-space: nowrap;
 }
 
 .year-days {
