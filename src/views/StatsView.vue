@@ -280,7 +280,31 @@ import { toDateInputValue } from '../utils/datetime.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
-const weekChartPlugins = [ChartDataLabels]
+const weekDailyTotalsPlugin = {
+  id: 'weekDailyTotals',
+  afterDraw(chart) {
+    const opts = chart.options?.plugins?.weekDailyTotals
+    if (!opts?.totals?.length) return
+    const { ctx } = chart
+    const xScale = chart.scales.x
+    const y = chart.chartArea.bottom + 3
+    const color = opts.color || '#888'
+    const font = '11px sans-serif'
+    ctx.save()
+    ctx.fillStyle = color
+    ctx.font = font
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    opts.totals.forEach((total, index) => {
+      if (total <= 0) return
+      const x = xScale.getPixelForValue(index)
+      ctx.fillText(String(total), x, y)
+    })
+    ctx.restore()
+  },
+}
+
+const weekChartPlugins = [ChartDataLabels, weekDailyTotalsPlugin]
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -301,6 +325,8 @@ const currentYear = computed(() => now.value.getFullYear())
 const currentMonth = computed(() => now.value.getMonth())
 
 const todayStr = computed(() => toDateInputValue(Date.now()))
+
+const chartMutedColor = ref('')
 
 const weekBounds = computed(() => {
   const s = weekStartStr.value
@@ -512,12 +538,19 @@ const weekChartData = computed(() => ({
   })),
 }))
 
-const weekChartOptions = {
+const weekChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
+  layout: {
+    padding: { bottom: 28 },
+  },
   plugins: {
     legend: { display: false },
+    weekDailyTotals: {
+      totals: weekDayCells.value.map((d) => Math.round(d.ms / 60000)),
+      color: chartMutedColor.value || '#888',
+    },
     datalabels: {
       color: '#fff',
       font: { size: 11, weight: 'bold' },
@@ -529,13 +562,14 @@ const weekChartOptions = {
         const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex)
         const el = meta?.data?.[ctx.dataIndex]
         const h = el?.height
-        return typeof h === 'number' && h >= 18
+        if (typeof h !== 'number') return false
+        return (ctx.raw >= 1 && ctx.raw <= 9 && h >= 10) || h >= 18
       },
       formatter: (value) => String(value),
     },
   },
   scales: {
-    x: { stacked: true },
+    x: { stacked: true, ticks: { padding: 8 } },
     y: {
       stacked: true,
       ticks: { display: false },
@@ -548,7 +582,7 @@ const weekChartOptions = {
       label: (ctx) => formatDurationMinutes(ctx.raw * 60000) + ' ' + ctx.dataset.label,
     },
   },
-}
+}))
 
 const weekProjectTotalsWithPercent = computed(() => {
   const total = weekTotalMs.value
@@ -836,6 +870,8 @@ async function load() {
 }
 
 onMounted(() => {
+  chartMutedColor.value =
+    getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888'
   const { start, end } = getLast7DaysBounds()
   weekStartStr.value = toDateInputValue(start)
   weekEndStr.value = toDateInputValue(end)
