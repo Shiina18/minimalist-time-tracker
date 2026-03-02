@@ -563,7 +563,7 @@ const weekChartOptions = computed(() => ({
         const el = meta?.data?.[ctx.dataIndex]
         const h = el?.height
         if (typeof h !== 'number') return false
-        return (ctx.raw >= 1 && ctx.raw <= 9 && h >= 10) || h >= 18
+        return (ctx.raw >= 1 && ctx.raw <= 9 && h >= 8) || h >= 18
       },
       formatter: (value) => String(value),
     },
