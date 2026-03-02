@@ -558,12 +558,14 @@ const weekChartOptions = computed(() => ({
       align: 'center',
       rotation: -90,
       display(ctx) {
-        if (ctx.raw === 0) return false
         const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex)
-        const el = meta?.data?.[ctx.dataIndex]
-        const h = el?.height
-        if (typeof h !== 'number') return false
-        return (ctx.raw >= 1 && ctx.raw <= 9 && h >= 8) || h >= 14
+        const el = meta.data[ctx.dataIndex]
+        const h = el.height
+        const value = Number(ctx.dataset.data[ctx.dataIndex])
+        if (!value) return false
+        const isSingleDigit = value > 0 && value < 10
+        if (isSingleDigit) return h >= 6
+        return h >= 10
       },
       formatter: (value) => String(value),
     },
