@@ -78,8 +78,13 @@
             <span class="week-legend-name">{{ item.name }}</span>
           </span>
         </div>
-        <div class="week-chart-wrapper">
-          <Bar :data="weekChartData" :options="weekChartOptions" :plugins="weekChartPlugins" />
+        <div ref="weekChartWrapperRef" class="week-chart-wrapper">
+          <Bar
+            ref="weekBarChartRef"
+            :data="weekChartData"
+            :options="weekChartOptions"
+            :plugins="weekChartPlugins"
+          />
         </div>
         <div v-if="weekProjectTotals.length > 0" class="week-project-totals">
           <h2 class="section-title">各项目总时长</h2>
@@ -255,7 +260,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -328,6 +333,37 @@ const todayStr = computed(() => toDateInputValue(Date.now()))
 
 const chartMutedColor = ref('')
 
+const weekChartWrapperRef = ref(null)
+const weekBarChartRef = ref(null)
+let weekChartResizeObserver = null
+
+function resizeWeekChart() {
+  let chart = weekBarChartRef.value?.chart
+  if (!chart && weekChartWrapperRef.value) {
+    const canvas = weekChartWrapperRef.value.querySelector('canvas')
+    if (canvas) chart = ChartJS.getChart(canvas)
+  }
+  chart?.resize()
+}
+
+function scheduleWeekChartResize() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      resizeWeekChart()
+      requestAnimationFrame(resizeWeekChart)
+    })
+  })
+}
+
+function handleChartVisibility() {
+  if (document.visibilityState !== 'visible') return
+  scheduleWeekChartResize()
+}
+
+function handleChartPageShow() {
+  scheduleWeekChartResize()
+}
+
 const weekBounds = computed(() => {
   const s = weekStartStr.value
   const e = weekEndStr.value
@@ -389,23 +425,29 @@ function aggregateByProjectInRange(rangeStart, rangeEnd, nowTs) {
   return [...map.values()].sort((a, b) => b.ms - a.ms)
 }
 
+/**
+ * 周堆叠柱「定性」配色：参考 Kelly / Okabe–Ito / Tol 等常用思路（类别无序、优先互斥而非色相均匀环），
+ * 深色主题下整体提亮以便与白字标签对比；绿/青/蓝只保留一支以免连成一片。
+ * 实务建议：系列仍多时配合柱内数字减依赖图例；可用 rgblind.com 等做 CVD 模拟抽检。
+ */
 const weekProjectColors = [
-  'rgba(124, 110, 246, 0.85)', // 紫
-  'rgba(34, 197, 94, 0.75)', // 绿
-  'rgba(234, 179, 8, 0.75)', // 黄
-  'rgba(236, 72, 153, 0.75)', // 粉
-  'rgba(20, 184, 166, 0.75)', // 青
-  'rgba(59, 130, 246, 0.8)', // 蓝
-  'rgba(244, 114, 182, 0.8)', // 亮粉
-  'rgba(248, 113, 113, 0.8)', // 红
-  'rgba(139, 92, 246, 0.8)', // 靛
-  'rgba(34, 197, 178, 0.8)', // 蓝绿
-  'rgba(251, 146, 60, 0.8)', // 橙
-  'rgba(163, 163, 163, 0.9)', // 灰（其他）
+  'rgba(217, 148, 35, 0.94)', // 金黄（略压亮度，白字可读）
+  'rgba(108, 148, 235, 0.93)', // 钴蓝 #00538A+
+  'rgba(255, 122, 51, 0.93)', // 橙 #FF6800+
+  'rgba(72, 212, 163, 0.93)', // 翡翠绿（唯一偏绿主色，与青蓝拉开）
+  'rgba(232, 72, 98, 0.93)', // 红 #C10020+
+  'rgba(94, 223, 246, 0.93)', // 亮青（与钴蓝错开：偏绿 vs 偏紫）
+  'rgba(196, 132, 246, 0.93)', // 紫 #803E75+
+  'rgba(191, 154, 96, 0.93)', // 驼色（略压亮度）
+  'rgba(255, 138, 178, 0.93)', // 粉红 #F6768E+
+  'rgba(161, 106, 76, 0.93)', // 深棕（暖色但与橙、驼色层级不同）
+  'rgba(164, 138, 235, 0.93)', // 紫罗兰 #53377A+
+  'rgba(218, 72, 168, 0.93)', // 洋红（与紫/粉红拉开）
+  'rgba(163, 163, 163, 0.92)', // 灰（其他）
 ]
 
-/** 柱内最多显示的项目数，其余合并为「其他」；3–6 段为常见最佳实践 */
-const WEEK_CHART_TOP_N = 6
+/** 柱内最多显示的项目数，其余合并为「其他」；增大可减少归入「其他」的项目 */
+const WEEK_CHART_TOP_N = 12
 
 const weekDayCells = computed(() => {
   const { start, end } = weekBounds.value
@@ -869,7 +911,32 @@ async function load() {
     map.set(s.id, await getSegmentsBySessionId(s.id))
   }
   sessionSegments.value = map
+  scheduleWeekChartResize()
 }
+
+watch(
+  tab,
+  (v) => {
+    weekChartResizeObserver?.disconnect()
+    weekChartResizeObserver = null
+    if (v !== 'week') return
+    nextTick(() => {
+      const el = weekChartWrapperRef.value
+      if (!el || typeof ResizeObserver === 'undefined') return
+      weekChartResizeObserver = new ResizeObserver(() => resizeWeekChart())
+      weekChartResizeObserver.observe(el)
+      scheduleWeekChartResize()
+    })
+  },
+  { flush: 'post', immediate: true },
+)
+
+watch(
+  () => sessions.value.length,
+  () => {
+    scheduleWeekChartResize()
+  },
+)
 
 onMounted(() => {
   chartMutedColor.value =
@@ -878,6 +945,15 @@ onMounted(() => {
   weekStartStr.value = toDateInputValue(start)
   weekEndStr.value = toDateInputValue(end)
   load()
+  document.addEventListener('visibilitychange', handleChartVisibility)
+  window.addEventListener('pageshow', handleChartPageShow)
+})
+
+onBeforeUnmount(() => {
+  weekChartResizeObserver?.disconnect()
+  weekChartResizeObserver = null
+  document.removeEventListener('visibilitychange', handleChartVisibility)
+  window.removeEventListener('pageshow', handleChartPageShow)
 })
 </script>
 
