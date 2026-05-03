@@ -1226,6 +1226,8 @@ onBeforeUnmount(() => {
 .stat-value {
   display: block;
   font-size: var(--fs-stat-number);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
@@ -1432,5 +1434,20 @@ onBeforeUnmount(() => {
 .empty {
   color: var(--text-muted);
   margin: 1rem 0;
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    gap: 0.5rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .stat-value {
+    font-size: clamp(1.4rem, 7vw, var(--fs-stat-number));
+    letter-spacing: -0.01em;
+  }
 }
 </style>
