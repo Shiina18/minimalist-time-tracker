@@ -18,7 +18,7 @@
       <RouterLink to="/record" class="nav-link" active-class="active">计时</RouterLink>
       <RouterLink to="/sessions" class="nav-link" active-class="active">历史</RouterLink>
       <RouterLink to="/projects" class="nav-link" active-class="active">项目</RouterLink>
-      <RouterLink to="/" class="nav-link" active-class="active">统计</RouterLink>
+      <RouterLink to="/stats" class="nav-link" active-class="active">统计</RouterLink>
       <RouterLink to="/help" class="nav-link" active-class="active">说明</RouterLink>
     </nav>
   </div>
