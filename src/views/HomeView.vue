@@ -26,6 +26,7 @@
         <div class="note-block">
           <div
             v-if="!noteEditing"
+            ref="noteDisplayRef"
             class="note-display"
             @click="startEditNote"
           >
@@ -128,16 +129,51 @@ const currentProjectName = computed(() => {
 const noteEditing = ref(false)
 const noteValue = ref('')
 const noteInputRef = ref(null)
+const noteDisplayRef = ref(null)
 
 const elapsedMs = ref(0)
 const toastMessage = ref('')
 let toastTimer = null
+// 超过 6 行通常意味着单屏展示不下，才允许外层滚动，避免误触导致页面漂移。
+const NOTE_SCROLL_UNLOCK_LINES = 6
 
 function syncMainScrollLock() {
   if (typeof document === 'undefined') return
   const mainEl = document.querySelector('.main')
   if (!mainEl) return
-  mainEl.classList.toggle('main--lock-scroll', !activeSession.value)
+  const shouldLock = !activeSession.value || !shouldAllowTimerScroll()
+  mainEl.classList.toggle('main--lock-scroll', shouldLock)
+}
+
+function getRenderedLineCount(el) {
+  if (!el || typeof window === 'undefined') return 0
+  const style = window.getComputedStyle(el)
+  let lineHeight = Number.parseFloat(style.lineHeight)
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+    const fontSize = Number.parseFloat(style.fontSize) || 16
+    lineHeight = fontSize * 1.5
+  }
+  return Math.round(el.scrollHeight / lineHeight)
+}
+
+function shouldAllowTimerScroll() {
+  if (!activeSession.value) return false
+
+  // 编辑态优先看 textarea 的实时高度，保证输入过程中滚动策略即时生效。
+  if (noteEditing.value && noteInputRef.value) {
+    return getRenderedLineCount(noteInputRef.value) > NOTE_SCROLL_UNLOCK_LINES
+  }
+
+  const noteText = (activeSession.value.note || '').trim()
+  if (!noteText || !noteDisplayRef.value) return false
+  return getRenderedLineCount(noteDisplayRef.value) > NOTE_SCROLL_UNLOCK_LINES
+}
+
+function queueSyncMainScrollLock() {
+  // 等 DOM 完成渲染后再读高度，避免拿到旧布局导致滚动锁误判。
+  nextTick(() => {
+    syncMainScrollLock()
+  })
 }
 
 function showToast(message) {
@@ -343,7 +379,7 @@ async function onClosePicker() {
 
 onMounted(async () => {
   await loadActive()
-  syncMainScrollLock()
+  queueSyncMainScrollLock()
   if (activeSession.value) startTick()
 })
 
@@ -356,8 +392,25 @@ onUnmounted(() => {
 })
 
 watch(activeSession, () => {
-  syncMainScrollLock()
+  queueSyncMainScrollLock()
 })
+
+watch(noteEditing, () => {
+  queueSyncMainScrollLock()
+})
+
+watch(noteValue, () => {
+  if (!activeSession.value) return
+  queueSyncMainScrollLock()
+})
+
+watch(
+  () => activeSession.value?.note,
+  () => {
+    if (!activeSession.value) return
+    queueSyncMainScrollLock()
+  },
+)
 </script>
 
 <style scoped>
@@ -419,10 +472,9 @@ watch(activeSession, () => {
   font-size: var(--fs-body-sm);
 }
 
-/* 有 session 时计时界面：限制在一屏内，禁止整页滚动（避免刷新后出现纵向滚动条） */
+/* 有 session 时计时界面：默认锁滚动，是否允许滚动由 main--lock-scroll 控制 */
 .home--running {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
 }
 
 .timer-block {
