@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   getActiveSession,
   getSegmentsBySessionId,
@@ -137,7 +137,7 @@ function syncMainScrollLock() {
   if (typeof document === 'undefined') return
   const mainEl = document.querySelector('.main')
   if (!mainEl) return
-  mainEl.classList.add('main--lock-scroll')
+  mainEl.classList.toggle('main--lock-scroll', !activeSession.value)
 }
 
 function showToast(message) {
@@ -353,6 +353,10 @@ onUnmounted(() => {
     mainEl?.classList.remove('main--lock-scroll')
   }
   stopTick()
+})
+
+watch(activeSession, () => {
+  syncMainScrollLock()
 })
 </script>
 
