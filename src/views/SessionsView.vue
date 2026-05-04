@@ -87,23 +87,28 @@ onMounted(load)
 
 <style scoped>
 .sessions {
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
 }
 
 .page-title {
-  margin: 0 0 1rem;
+  margin: 0 0 0.6rem;
   font-size: var(--fs-page-title);
+  font-family: var(--font-display);
   font-weight: 600;
 }
 
 .add-btn {
-  display: inline-block;
-  margin-bottom: 1.5rem;
-  padding: 0.75rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  padding: 0.65rem 1.05rem;
   border-radius: var(--radius);
   font-weight: 500;
   background: var(--accent);
   color: white;
+  border: 1px solid var(--accent);
+  box-shadow: var(--shadow-soft);
 }
 
 .loading, .empty {
@@ -112,39 +117,39 @@ onMounted(load)
 }
 
 .date-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.9rem;
 }
 
 .date-group-title {
-  margin: 0 0 0.5rem;
-  font-size: var(--fs-body);
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .session-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .session-item {
-  border-bottom: 1px solid var(--border);
-}
-
-.session-item:last-child {
-  border-bottom: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
 }
 
 .session-link {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.25rem;
-  padding: 1rem;
+  gap: 0.3rem;
+  padding: 0.85rem 0.95rem;
   color: var(--text);
   min-height: var(--touch-min);
 }
@@ -156,13 +161,14 @@ onMounted(load)
 }
 
 .session-duration {
-  color: var(--text-muted);
+  color: var(--accent);
   font-size: var(--fs-body);
+  font-weight: 600;
 }
 
 .session-note-summary {
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: 0.92rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;

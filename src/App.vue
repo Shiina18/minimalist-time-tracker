@@ -69,7 +69,7 @@ function dismissUpdate() {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 1rem;
+  padding: 1rem 1rem 0.5rem;
   padding-bottom: calc(var(--touch-min) + 1rem + env(safe-area-inset-bottom, 0px));
 }
 
@@ -82,8 +82,9 @@ function dismissUpdate() {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, #fff 12%);
   border-bottom: 1px solid var(--border);
+  backdrop-filter: saturate(1.2) blur(8px);
 }
 
 .update-text {
@@ -107,35 +108,38 @@ function dismissUpdate() {
 .update-btn {
   background: var(--accent);
   color: #fff;
-  border: none;
+  border-color: var(--accent);
 }
 
 .update-btn-secondary {
-  background: transparent;
+  background: var(--surface-soft);
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
 
 .nav {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 0.75rem;
+  right: 0.75rem;
   bottom: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: var(--touch-min);
-  padding: 0.5rem;
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+  padding: 0.4rem;
+  padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface) 90%, #fff 10%);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--shadow-soft);
 }
 
 .nav-link {
   flex: 1;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.4rem;
   color: var(--text-muted);
-  font-size: var(--fs-body);
+  font-size: 0.95rem;
   border-radius: var(--radius);
   min-height: var(--touch-min);
   display: flex;
@@ -144,6 +148,8 @@ function dismissUpdate() {
 }
 
 .nav-link.active {
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.18);
 }
 </style>

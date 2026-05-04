@@ -358,6 +358,9 @@ onUnmounted(() => {
   margin: -1rem;
   margin-bottom: calc(-1rem - env(safe-area-inset-bottom, 0px));
   width: calc(100% + 2rem);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 55%),
+    linear-gradient(180deg, #fff8ef 0%, #f2eadf 100%);
 }
 
 .hero {
@@ -371,7 +374,7 @@ onUnmounted(() => {
 }
 
 .hero:hover {
-  background: rgba(124, 110, 246, 0.06);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 .hero:focus {
@@ -385,10 +388,12 @@ onUnmounted(() => {
 
 .hero-label {
   font-size: var(--fs-hero);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--accent);
   text-align: center;
+  text-shadow: 0 10px 20px rgba(var(--accent-rgb), 0.1);
 }
 
 .hero-hint {
@@ -409,17 +414,19 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   min-height: 0;
+  gap: 0.6rem;
 }
 
 .timer-section {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .timer-value {
   margin: 0;
   font-size: var(--fs-timer);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -429,11 +436,13 @@ onUnmounted(() => {
 
 .current-project {
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   margin: 0 auto 0.75rem;
-  padding: 0.5rem 1rem;
+  padding: 0.65rem 1rem;
   background: var(--surface);
   border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
   font-size: var(--fs-body);
 }
 
@@ -447,7 +456,7 @@ onUnmounted(() => {
 
 .note-block {
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   margin: 0 auto 0.75rem;
 }
 
@@ -485,7 +494,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   margin: 0 auto;
 }
 
@@ -497,10 +506,11 @@ onUnmounted(() => {
   justify-content: center;
   padding: 0 1rem;
   font-size: var(--fs-body);
-  font-weight: 600;
+  font-weight: 700;
   background: var(--danger);
   color: white;
   border-radius: var(--radius);
+  border-color: var(--danger);
 }
 
 .project-actions {
@@ -517,7 +527,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 82%, var(--surface-soft) 18%);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -534,8 +544,8 @@ onUnmounted(() => {
   left: 50%;
   bottom: calc(var(--touch-min) + 1.25rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: var(--text);
+  background: rgba(47, 38, 25, 0.9);
+  color: #fff8ec;
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
   font-size: var(--fs-caption);

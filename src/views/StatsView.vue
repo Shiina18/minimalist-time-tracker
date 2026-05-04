@@ -613,7 +613,12 @@ const weekChartOptions = computed(() => ({
     },
   },
   scales: {
-    x: { stacked: true, ticks: { padding: 8 } },
+    x: {
+      stacked: true,
+      ticks: { padding: 8 },
+      grid: { display: false, drawBorder: false },
+      border: { display: false },
+    },
     y: {
       stacked: true,
       ticks: { display: false },
@@ -959,42 +964,49 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .stats {
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
 }
 
 .page-title {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.35rem;
   font-size: var(--fs-page-title);
+  font-family: var(--font-display);
   font-weight: 600;
 }
 
 .stats-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding: 0.3rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .tab {
-  padding: 0.5rem 1rem;
+  flex: 1;
+  padding: 0.5rem 0.75rem;
   font-size: var(--fs-body);
   color: var(--text-muted);
-  background: var(--surface);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   min-height: var(--touch-min);
 }
 
 .tab.active {
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
   font-weight: 600;
   border-color: var(--accent);
 }
 
 .week-range {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 0.75rem;
+  gap: 0.6rem;
   margin-bottom: 0.5rem;
 }
 
@@ -1002,6 +1014,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .range-label-text {
@@ -1010,7 +1024,8 @@ onBeforeUnmount(() => {
 }
 
 .range-input {
-  padding: 0.5rem;
+  width: 100%;
+  padding: 0.52rem 0.6rem;
   font-size: var(--fs-body);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1019,7 +1034,7 @@ onBeforeUnmount(() => {
 }
 
 .week-label {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   font-size: var(--fs-body);
   color: var(--text-muted);
 }
@@ -1031,16 +1046,19 @@ onBeforeUnmount(() => {
 .week-chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+  gap: 0.35rem 0.7rem;
+  overflow: visible;
+  padding: 0.05rem 0;
   margin-bottom: 0.75rem;
-  font-size: var(--fs-caption);
+  font-size: 0.84rem;
   color: var(--text-muted);
 }
 
 .week-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
+  white-space: normal;
 }
 
 .week-legend-swatch {
@@ -1055,9 +1073,19 @@ onBeforeUnmount(() => {
 }
 
 .week-chart-wrapper {
-  height: 220px;
+  height: 210px;
   width: 100%;
   padding-top: 0.25rem;
+}
+
+.week-chart-wrapper :deep(canvas) {
+  outline: none !important;
+  border: none;
+}
+
+.week-chart-wrapper :deep(canvas:focus),
+.week-chart-wrapper :deep(canvas:focus-visible) {
+  outline: none !important;
 }
 
 .week-project-totals {
@@ -1069,13 +1097,17 @@ onBeforeUnmount(() => {
 .week-project-bars {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .week-project-row {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  padding: 0.55rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .week-project-info {
@@ -1210,8 +1242,8 @@ onBeforeUnmount(() => {
 
 .stats-row {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
 }
 
 .stat-item {
@@ -1219,8 +1251,9 @@ onBeforeUnmount(() => {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 0.65rem 0.5rem;
   text-align: center;
+  box-shadow: var(--shadow-soft);
 }
 
 .stat-value {
@@ -1239,7 +1272,7 @@ onBeforeUnmount(() => {
   margin: 0 0 0.5rem;
   font-size: var(--fs-body-sm);
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 .heatmap-section {
@@ -1284,15 +1317,15 @@ onBeforeUnmount(() => {
 }
 
 .calendar-day.heat-1 {
-  background: rgba(124, 110, 246, 0.2);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .calendar-day.heat-2 {
-  background: rgba(124, 110, 246, 0.45);
+  background: rgba(var(--accent-rgb), 0.36);
 }
 
 .calendar-day.heat-3 {
-  background: rgba(124, 110, 246, 0.7);
+  background: rgba(var(--accent-rgb), 0.62);
 }
 
 .calendar-day.heat-4 {
@@ -1368,17 +1401,17 @@ onBeforeUnmount(() => {
 }
 
 .year-cell.heat-1 {
-  background: rgba(124, 110, 246, 0.2);
+  background: rgba(var(--accent-rgb), 0.18);
   border-color: var(--border);
 }
 
 .year-cell.heat-2 {
-  background: rgba(124, 110, 246, 0.45);
+  background: rgba(var(--accent-rgb), 0.36);
   border-color: var(--border);
 }
 
 .year-cell.heat-3 {
-  background: rgba(124, 110, 246, 0.7);
+  background: rgba(var(--accent-rgb), 0.62);
   border-color: var(--border);
 }
 
@@ -1437,6 +1470,14 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 480px) {
+  .week-range {
+    flex-wrap: wrap;
+  }
+
+  .range-label {
+    width: 100%;
+  }
+
   .stats-row {
     gap: 0.5rem;
   }

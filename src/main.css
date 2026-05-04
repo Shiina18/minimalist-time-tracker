@@ -1,17 +1,21 @@
 :root {
-  color-scheme: dark;
-  --bg: #0f0f12;
-  --surface: #1a1a1f;
-  --border: #2a2a32;
-  --text: #e8e8ec;
-  --text-muted: #8888a0;
-  --accent: #7c6ef6;
-  --accent-hover: #9185f8;
-  --danger: #e85d5d;
-  --success: #5dce8a;
-  --radius: 12px;
+  color-scheme: light;
+  --bg: #f3ede2;
+  --surface: #fffdf8;
+  --surface-soft: #f7f1e5;
+  --border: #ddd2c1;
+  --text: #2f2619;
+  --text-muted: #786d5f;
+  --accent: #b24a2d;
+  --accent-hover: #8f3b24;
+  --accent-rgb: 178, 74, 45;
+  --danger: #b83c30;
+  --success: #2f7c54;
+  --shadow-soft: 0 8px 24px rgba(58, 36, 20, 0.06);
+  --radius: 14px;
   --touch-min: 48px;
-  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-display: "Songti SC", "STSong", "Noto Serif SC", serif;
   /* Typography scale */
   --fs-hero: clamp(3rem, 20vw, 5rem);
   --fs-timer: 5.5rem;
@@ -32,7 +36,10 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   line-height: 1.5;
-  background: var(--bg);
+  background:
+    radial-gradient(140% 100% at 0% 0%, #fff8ea 0%, transparent 45%),
+    radial-gradient(120% 120% at 100% 0%, #f0e8dc 0%, transparent 40%),
+    var(--bg);
   color: var(--text);
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
@@ -59,9 +66,11 @@ a {
 button {
   font-family: inherit;
   cursor: pointer;
-  border: none;
-  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 input, select, textarea {
@@ -79,6 +88,22 @@ input[type="time"] {
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.4);
+  outline-offset: 1px;
 }
 
 /* 原生 date/time 选择器图标：用 mask + currentColor 显示为浅色（与 --text 一致） */
@@ -111,7 +136,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--surface);
+  background: var(--surface-soft);
   cursor: pointer;
   flex-shrink: 0;
 }

@@ -248,11 +248,11 @@ onMounted(async () => {
   font-weight: 600;
   color: var(--accent);
   border: 2px solid var(--accent);
-  background: rgba(124, 110, 246, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
 }
 
 .add-segment-btn:hover {
-  background: rgba(124, 110, 246, 0.2);
+  background: rgba(var(--accent-rgb), 0.2);
 }
 
 .form-actions {
