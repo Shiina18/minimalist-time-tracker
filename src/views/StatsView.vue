@@ -49,7 +49,10 @@
           />
         </label>
       </div>
-      <p class="week-label">{{ weekRangeLabel }}</p>
+      <div class="week-meta-row">
+        <p class="week-label">{{ weekRangeLabel }}</p>
+        <span class="week-granularity-badge">{{ weekGranularityLabel }}</span>
+      </div>
       <div class="stats-row">
         <div class="stat-item">
           <span class="stat-value">{{ weekRecordDays }}</span>
@@ -448,6 +451,7 @@ const weekProjectColors = [
 
 /** 柱内最多显示的项目数，其余合并为「其他」；增大可减少归入「其他」的项目 */
 const WEEK_CHART_TOP_N = 12
+const WEEK_CHART_MAX_BARS = 14
 
 const weekDayCells = computed(() => {
   const { start, end } = weekBounds.value
@@ -496,6 +500,67 @@ function weekChartColorIndex(projectId) {
   const idx = weekChartLegendItems.value.findIndex((item) => item.projectId === projectId)
   return idx >= 0 ? idx % weekProjectColors.length : 0
 }
+
+function formatShortDateLabel(dateKeyText) {
+  const [year, month, day] = dateKeyText.split('-').map(Number)
+  if (!year || !month || !day) return dateKeyText
+  return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
+}
+
+function formatLongDateLabel(dateKeyText) {
+  const [year, month, day] = dateKeyText.split('-').map(Number)
+  if (!year || !month || !day) return dateKeyText
+  return `${year} 年 ${month} 月 ${day} 日`
+}
+
+function aggregateByProject(items) {
+  const map = new Map()
+  for (const item of items) {
+    const cur = map.get(item.projectId)
+    map.set(item.projectId, {
+      projectId: item.projectId,
+      name: item.name,
+      ms: (cur?.ms ?? 0) + item.ms,
+    })
+  }
+  return [...map.values()].sort((a, b) => b.ms - a.ms)
+}
+
+const weekGroupSize = computed(() => {
+  const totalDays = weekDayCells.value.length
+  if (totalDays <= 0) return 1
+  return Math.max(1, Math.ceil(totalDays / WEEK_CHART_MAX_BARS))
+})
+
+const weekGranularityLabel = computed(() => {
+  if (weekGroupSize.value <= 1) return '日视图'
+  return `${weekGroupSize.value} 天汇总`
+})
+
+const weekGroupedBuckets = computed(() => {
+  const days = weekDayCells.value
+  const size = weekGroupSize.value
+  if (!days.length) return []
+  const buckets = []
+  for (let i = 0; i < days.length; i += size) {
+    const groupDays = days.slice(i, i + size)
+    const firstDay = groupDays[0]
+    const lastDay = groupDays[groupDays.length - 1]
+    const ms = groupDays.reduce((sum, day) => sum + day.ms, 0)
+    const byProject = aggregateByProject(groupDays.flatMap((day) => day.byProject))
+    buckets.push({
+      key: firstDay.key,
+      label: formatShortDateLabel(firstDay.key),
+      startKey: firstDay.key,
+      endKey: lastDay.key,
+      days: groupDays,
+      rangeDays: groupDays.length,
+      ms,
+      byProject,
+    })
+  }
+  return buckets
+})
 
 const weekLegendItems = computed(() => {
   return weekProjectOrder.value.map((projectId) => {
@@ -568,10 +633,10 @@ function weekChartSegments(day) {
 
 /** Chart.js 周柱状图数据：堆叠柱，单位为分钟 */
 const weekChartData = computed(() => ({
-  labels: weekDayCells.value.map((d) => d.label),
+  labels: weekGroupedBuckets.value.map((d) => d.label),
   datasets: weekChartLegendItems.value.map((item) => ({
     label: item.name,
-    data: weekDayCells.value.map((day) => {
+    data: weekGroupedBuckets.value.map((day) => {
       const seg = weekChartSegments(day).find((p) => p.projectId === item.projectId)
       return seg ? Math.round(seg.ms / 60000) : 0
     }),
@@ -590,7 +655,7 @@ const weekChartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     weekDailyTotals: {
-      totals: weekDayCells.value.map((d) => Math.round(d.ms / 60000)),
+      totals: weekGroupedBuckets.value.map((d) => Math.round(d.ms / 60000)),
       color: chartMutedColor.value || '#888',
     },
     datalabels: {
@@ -627,8 +692,26 @@ const weekChartOptions = computed(() => ({
     },
   },
   tooltip: {
+    intersect: false,
+    mode: 'index',
     callbacks: {
+      title: (items) => {
+        const index = items?.[0]?.dataIndex ?? -1
+        const bucket = weekGroupedBuckets.value[index]
+        if (!bucket) return ''
+        if (bucket.startKey === bucket.endKey) {
+          return formatLongDateLabel(bucket.startKey)
+        }
+        return `${formatLongDateLabel(bucket.startKey)} - ${formatLongDateLabel(bucket.endKey)}`
+      },
       label: (ctx) => formatDurationMinutes(ctx.raw * 60000) + ' ' + ctx.dataset.label,
+      footer: (items) => {
+        const index = items?.[0]?.dataIndex ?? -1
+        const bucket = weekGroupedBuckets.value[index]
+        if (!bucket) return ''
+        const avg = bucket.rangeDays > 0 ? Math.round(bucket.ms / bucket.rangeDays) : 0
+        return `总计 ${formatDuration(bucket.ms)} · 日均 ${formatDurationShort(avg)}`
+      },
     },
   },
 }))
@@ -1034,9 +1117,26 @@ onBeforeUnmount(() => {
 }
 
 .week-label {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: var(--fs-body);
+  line-height: 1.35;
   color: var(--text-muted);
+}
+
+.week-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.week-granularity-badge {
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .week-chart-section {
@@ -1489,6 +1589,12 @@ onBeforeUnmount(() => {
   .stat-value {
     font-size: clamp(1.4rem, 7vw, var(--fs-stat-number));
     letter-spacing: -0.01em;
+  }
+
+  .week-meta-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 0.65rem;
   }
 }
 </style>
