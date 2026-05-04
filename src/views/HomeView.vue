@@ -356,11 +356,12 @@ onUnmounted(() => {
 .home--start {
   min-height: calc(100dvh - var(--touch-min) - env(safe-area-inset-bottom, 0px) - 2rem);
   margin: -1rem;
-  margin-bottom: calc(-1rem - env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(-1rem - var(--touch-min) - env(safe-area-inset-bottom, 0px));
   width: calc(100% + 2rem);
   background:
-    radial-gradient(120% 80% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 55%),
-    linear-gradient(180deg, #fff8ef 0%, #f2eadf 100%);
+    radial-gradient(140% 100% at 0% 0%, #fff8ea 0%, transparent 45%),
+    radial-gradient(120% 120% at 100% 0%, #f0e8dc 0%, transparent 40%),
+    var(--bg);
 }
 
 .hero {
