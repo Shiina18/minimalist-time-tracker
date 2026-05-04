@@ -73,6 +73,11 @@ function dismissUpdate() {
   padding-bottom: calc(var(--touch-min) + 1rem + env(safe-area-inset-bottom, 0px));
 }
 
+.main.main--lock-scroll {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .update-banner {
   position: sticky;
   top: 0;

@@ -133,6 +133,13 @@ const elapsedMs = ref(0)
 const toastMessage = ref('')
 let toastTimer = null
 
+function syncMainScrollLock() {
+  if (typeof document === 'undefined') return
+  const mainEl = document.querySelector('.main')
+  if (!mainEl) return
+  mainEl.classList.add('main--lock-scroll')
+}
+
 function showToast(message) {
   toastMessage.value = message
   if (toastTimer) {
@@ -336,10 +343,15 @@ async function onClosePicker() {
 
 onMounted(async () => {
   await loadActive()
+  syncMainScrollLock()
   if (activeSession.value) startTick()
 })
 
 onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    const mainEl = document.querySelector('.main')
+    mainEl?.classList.remove('main--lock-scroll')
+  }
   stopTick()
 })
 </script>
