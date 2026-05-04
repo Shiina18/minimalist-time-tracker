@@ -28,6 +28,7 @@
             v-if="!noteEditing"
             ref="noteDisplayRef"
             class="note-display"
+            :class="{ 'note-display--placeholder': !(activeSession.note || '').trim() }"
             @click="startEditNote"
           >
             {{ (activeSession.note || '').trim() || '添加备注' }}
@@ -541,6 +542,10 @@ watch(
   color: var(--text);
   cursor: text;
   border: 1px solid var(--border);
+}
+
+.note-display--placeholder {
+  color: var(--text-muted);
 }
 
 .note-display:hover {

@@ -1072,7 +1072,7 @@ onBeforeUnmount(() => {
   padding: 0.5rem 0.75rem;
   font-size: var(--fs-body);
   color: var(--text-muted);
-  background: transparent;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   min-height: var(--touch-min);
