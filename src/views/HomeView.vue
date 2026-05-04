@@ -16,7 +16,14 @@
       <div class="timer-block">
         <div class="timer-section">
           <p class="timer-value" :class="{ 'timer-value--paused': pausedAt }">
-            {{ formatDuration(elapsedMs) }}
+            <span
+              v-for="part in formattedElapsedParts"
+              :key="part.key"
+              class="timer-char"
+              :class="{ 'timer-char--colon': part.isColon }"
+            >
+              {{ part.char }}
+            </span>
           </p>
         </div>
         <div class="current-project" v-if="currentProjectName">
@@ -135,6 +142,14 @@ const noteDisplayRef = ref(null)
 const elapsedMs = ref(0)
 const toastMessage = ref('')
 let toastTimer = null
+const formattedElapsed = computed(() => formatDuration(elapsedMs.value))
+const formattedElapsedParts = computed(() =>
+  Array.from(formattedElapsed.value, (char, index) => ({
+    key: `${index}-${char}`,
+    char,
+    isColon: char === ':',
+  })),
+)
 // 超过 6 行通常意味着单屏展示不下，才允许外层滚动，避免误触导致页面漂移。
 const NOTE_SCROLL_UNLOCK_LINES = 6
 
@@ -497,9 +512,19 @@ watch(
   font-size: var(--fs-timer);
   font-family: var(--font-ui);
   font-weight: 700;
+  line-height: 1;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+.timer-char {
+  display: inline-block;
+}
+
+.timer-char--colon {
+  /* 冒号字形视觉中心偏下，轻微上移以匹配数字光学居中。 */
+  transform: translateY(-0.1em);
 }
 
 .timer-value--paused {
