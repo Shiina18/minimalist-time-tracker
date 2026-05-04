@@ -93,7 +93,7 @@ onMounted(load)
 .page-title {
   margin: 0 0 0.6rem;
   font-size: var(--fs-page-title);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-weight: 600;
 }
 

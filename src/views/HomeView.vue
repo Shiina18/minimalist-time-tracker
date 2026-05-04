@@ -388,8 +388,8 @@ onUnmounted(() => {
 
 .hero-label {
   font-size: var(--fs-hero);
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-ui);
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--accent);
   text-align: center;
@@ -425,9 +425,11 @@ onUnmounted(() => {
 .timer-value {
   margin: 0;
   font-size: var(--fs-timer);
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .timer-value--paused {

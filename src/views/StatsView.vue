@@ -970,7 +970,7 @@ onBeforeUnmount(() => {
 .page-title {
   margin: 0 0 0.35rem;
   font-size: var(--fs-page-title);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-weight: 600;
 }
 
@@ -978,10 +978,10 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.35rem;
   margin-bottom: 0.75rem;
-  padding: 0.3rem;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .tab {
