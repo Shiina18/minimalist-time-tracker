@@ -103,6 +103,8 @@ import {
   deleteSegment,
   updateSession,
   updateSegment,
+  setSessionPause,
+  clearSessionPause,
 } from '../db/index.js'
 
 const MIN_DURATION_MS = 3 * 60 * 1000
@@ -230,6 +232,20 @@ function openPicker() {
   showPicker.value = true
 }
 
+async function persistPauseState(pausedAtVal, pausedProjectIdVal) {
+  const session = activeSession.value
+  if (!session) return
+  await setSessionPause(session.id, {
+    pausedAt: pausedAtVal,
+    pausedProjectId: pausedProjectIdVal,
+  })
+  activeSession.value = {
+    ...session,
+    pausedAt: pausedAtVal,
+    pausedProjectId: pausedProjectIdVal,
+  }
+}
+
 async function togglePause() {
   if (showPicker.value) return
   const session = activeSession.value
@@ -245,6 +261,7 @@ async function togglePause() {
     pausedAt.value = now
     pausedProjectId.value = projectId
     segments.value = await getSegmentsBySessionId(session.id)
+    await persistPauseState(now, projectId)
   } else {
     const projectId = pausedProjectId.value
     await addSegment({
@@ -256,6 +273,7 @@ async function togglePause() {
     pausedAt.value = null
     pausedProjectId.value = null
     segments.value = await getSegmentsBySessionId(session.id)
+    await persistPauseState(null, null)
   }
 }
 
@@ -264,12 +282,21 @@ async function loadActive() {
   if (!session) {
     activeSession.value = null
     segments.value = []
+    pausedAt.value = null
+    pausedProjectId.value = null
     elapsedMs.value = 0
     return
   }
   activeSession.value = session
   segments.value = await getSegmentsBySessionId(session.id)
-  const projectIds = [...new Set(segments.value.map((s) => s.projectId).filter(Boolean))]
+  pausedAt.value = session.pausedAt ?? null
+  pausedProjectId.value = session.pausedProjectId ?? null
+  const projectIds = [
+    ...new Set([
+      ...segments.value.map((s) => s.projectId).filter(Boolean),
+      session.pausedProjectId,
+    ].filter(Boolean)),
+  ]
   const projects = await Promise.all(projectIds.map((id) => getProject(id)))
   projectMap.value = Object.fromEntries(projects.filter(Boolean).map((p) => [p.id, p]))
   elapsedMs.value = computeElapsed()
@@ -346,6 +373,7 @@ async function endSession() {
   }
   const session = activeSession.value
   if (!session) return
+  await clearSessionPause(session.id)
   const sessionDur = now - session.startAt
   if (sessionDur < MIN_DURATION_MS) {
     await deleteSession(session.id)
@@ -384,9 +412,11 @@ async function onSelectProject(project) {
     endAt: null,
   })
   pausedAt.value = null
+  pausedProjectId.value = null
   showPicker.value = false
   if (project.id && !projectMap.value[project.id]) projectMap.value[project.id] = project
   segments.value = await getSegmentsBySessionId(activeSession.value.id)
+  await persistPauseState(null, null)
 }
 
 async function onClosePicker() {

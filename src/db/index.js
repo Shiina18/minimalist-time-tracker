@@ -147,9 +147,19 @@ export async function addSession({ startAt, endAt = null, note }) {
     startAt,
     endAt,
     note: note ?? '',
+    pausedAt: null,
+    pausedProjectId: null,
   }
   await db.add('sessions', session)
   return session
+}
+
+export async function setSessionPause(id, { pausedAt, pausedProjectId }) {
+  return updateSession(id, { pausedAt, pausedProjectId })
+}
+
+export async function clearSessionPause(id) {
+  return updateSession(id, { pausedAt: null, pausedProjectId: null })
 }
 
 export async function updateSession(id, patch) {
