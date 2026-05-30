@@ -339,23 +339,65 @@ const chartMutedColor = ref('')
 const weekChartWrapperRef = ref(null)
 const weekBarChartRef = ref(null)
 let weekChartResizeObserver = null
+let weekChartDelayedResizeTimer = null
+/** 首屏 flex/WebView 布局未稳定时 clientWidth 可能长期为 0，仅靠 ResizeObserver 不可靠 */
+let weekChartLayoutRafId = null
+let weekChartLayoutAttempts = 0
+const WEEK_CHART_LAYOUT_MAX_FRAMES = 90
+
+function cancelWeekChartLayoutRetry() {
+  if (weekChartLayoutRafId != null) {
+    cancelAnimationFrame(weekChartLayoutRafId)
+    weekChartLayoutRafId = null
+  }
+  weekChartLayoutAttempts = 0
+}
 
 function resizeWeekChart() {
+  const wrap = weekChartWrapperRef.value
+  // 在宽度为 0 时调用 Chart.resize 会把画布锁在极小尺寸，且之后未必再触发 Observer
+  if (wrap && wrap.clientWidth === 0) return
   let chart = weekBarChartRef.value?.chart
-  if (!chart && weekChartWrapperRef.value) {
-    const canvas = weekChartWrapperRef.value.querySelector('canvas')
+  if (!chart && wrap) {
+    const canvas = wrap.querySelector('canvas')
     if (canvas) chart = ChartJS.getChart(canvas)
   }
   chart?.resize()
+}
+
+function runWeekChartLayoutRetries() {
+  cancelWeekChartLayoutRetry()
+  const step = () => {
+    weekChartLayoutRafId = null
+    if (tab.value !== 'week') return
+    const wrap = weekChartWrapperRef.value
+    if (!wrap) return
+    resizeWeekChart()
+    if (wrap.clientWidth > 0) return
+    if (weekChartLayoutAttempts >= WEEK_CHART_LAYOUT_MAX_FRAMES) return
+    weekChartLayoutAttempts += 1
+    weekChartLayoutRafId = requestAnimationFrame(step)
+  }
+  weekChartLayoutRafId = requestAnimationFrame(step)
 }
 
 function scheduleWeekChartResize() {
   nextTick(() => {
     requestAnimationFrame(() => {
       resizeWeekChart()
-      requestAnimationFrame(resizeWeekChart)
+      requestAnimationFrame(() => {
+        resizeWeekChart()
+        runWeekChartLayoutRetries()
+      })
     })
   })
+  // 移动端常见：首帧 / 异步布局后容器宽度仍为 0，ResizeObserver 不一定再次触发；短延迟补一次 resize。
+  if (weekChartDelayedResizeTimer != null) clearTimeout(weekChartDelayedResizeTimer)
+  weekChartDelayedResizeTimer = setTimeout(() => {
+    weekChartDelayedResizeTimer = null
+    resizeWeekChart()
+    runWeekChartLayoutRetries()
+  }, 280)
 }
 
 function handleChartVisibility() {
@@ -364,6 +406,10 @@ function handleChartVisibility() {
 }
 
 function handleChartPageShow() {
+  scheduleWeekChartResize()
+}
+
+function handleVisualViewportResize() {
   scheduleWeekChartResize()
 }
 
@@ -782,22 +828,19 @@ const recordDays = computed(() => {
   return Object.values(dailyByMonth.value).filter((ms) => ms > 0).length
 })
 
-/** 该月第一次有记录的日期（YYYY-MM-DD），无记录为 null */
-const monthFirstRecordDateKey = computed(() => {
-  const daily = dailyByMonth.value
-  const keys = Object.entries(daily)
-    .filter(([, ms]) => ms > 0)
-    .map(([k]) => k)
-  return keys.length ? keys.sort()[0] : null
-})
-
-/** 平均每天的分母：从该月第一次有记录日期到今日的天数（至少 1） */
+/** 平均每天的分母：该月 1 号到月末（与今天取较早）的日历天数（至少 1） */
 const monthAvgPerDayDenom = computed(() => {
-  const firstKey = monthFirstRecordDateKey.value
-  if (!firstKey) return 0
-  const [y, m, d] = firstKey.split('-').map(Number)
-  const start = new Date(y, m - 1, d).getTime()
-  const end = new Date(now.value.getFullYear(), now.value.getMonth(), now.value.getDate(), 23, 59, 59, 999).getTime()
+  const { start } = monthBounds.value
+  const todayEnd = new Date(
+    now.value.getFullYear(),
+    now.value.getMonth(),
+    now.value.getDate(),
+    23,
+    59,
+    59,
+    999,
+  ).getTime()
+  const end = Math.min(monthBounds.value.end, todayEnd)
   const dayMs = 24 * 60 * 60 * 1000
   return Math.max(1, Math.ceil((end - start) / dayMs))
 })
@@ -1007,6 +1050,7 @@ watch(
   (v) => {
     weekChartResizeObserver?.disconnect()
     weekChartResizeObserver = null
+    cancelWeekChartLayoutRetry()
     if (v !== 'week') return
     nextTick(() => {
       const el = weekChartWrapperRef.value
@@ -1026,6 +1070,21 @@ watch(
   },
 )
 
+/** 桶数量 / 图例变化时 Chart 会更新数据，但外壳尺寸未变时 ResizeObserver 不会触发，小屏上易出现空白画布。 */
+watch(
+  () => [
+    weekGroupedBuckets.value.length,
+    weekChartLegendItems.value.length,
+    weekStartStr.value,
+    weekEndStr.value,
+  ],
+  () => {
+    if (tab.value !== 'week') return
+    scheduleWeekChartResize()
+  },
+  { flush: 'post' },
+)
+
 onMounted(() => {
   chartMutedColor.value =
     getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888'
@@ -1035,13 +1094,20 @@ onMounted(() => {
   load()
   document.addEventListener('visibilitychange', handleChartVisibility)
   window.addEventListener('pageshow', handleChartPageShow)
+  window.visualViewport?.addEventListener('resize', handleVisualViewportResize)
 })
 
 onBeforeUnmount(() => {
   weekChartResizeObserver?.disconnect()
   weekChartResizeObserver = null
+  cancelWeekChartLayoutRetry()
+  if (weekChartDelayedResizeTimer != null) {
+    clearTimeout(weekChartDelayedResizeTimer)
+    weekChartDelayedResizeTimer = null
+  }
   document.removeEventListener('visibilitychange', handleChartVisibility)
   window.removeEventListener('pageshow', handleChartPageShow)
+  window.visualViewport?.removeEventListener('resize', handleVisualViewportResize)
 })
 </script>
 

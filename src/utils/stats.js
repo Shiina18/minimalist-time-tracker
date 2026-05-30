@@ -1,37 +1,4 @@
 /**
- * 按自然日聚合 session 时长。
- * @param {Array<{ startAt: number, endAt: number | null }>} sessions
- * @param {number} rangeStart - 范围开始时间戳（含）
- * @param {number} rangeEnd - 范围结束时间戳（含）
- * @param {number} now - 当前时间戳（进行中 session 的结束端用此值）
- * @returns {{ [key: string]: number }} key 为 'YYYY-MM-DD'，值为该日时长毫秒
- */
-export function aggregateMsByDay(sessions, rangeStart, rangeEnd, now) {
-  const out = Object.create(null)
-  const startD = new Date(rangeStart)
-  const endD = new Date(rangeEnd)
-  const dayMs = 24 * 60 * 60 * 1000
-  for (
-    let d = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
-    d.getTime() <= endD.getTime();
-    d.setDate(d.getDate() + 1)
-  ) {
-    const dayStart = d.getTime()
-    const dayEnd = dayStart + dayMs - 1
-    const key = formatDateKey(dayStart)
-    let ms = 0
-    for (const s of sessions) {
-      const segEnd = s.endAt != null ? s.endAt : now
-      const start = Math.max(s.startAt, dayStart)
-      const end = Math.min(segEnd, dayEnd)
-      if (end > start) ms += end - start
-    }
-    out[key] = ms
-  }
-  return out
-}
-
-/**
  * Session 总时长 = 该 session 下所有 segment 时长之和；endAt==null 的段用 now 作为结束。
  * @param {{ startAt: number, endAt: number | null }} session
  * @param {Array<{ startAt: number, endAt: number | null }>} segments
