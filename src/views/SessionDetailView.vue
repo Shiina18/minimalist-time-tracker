@@ -126,6 +126,7 @@ import {
 import { formatDuration, formatDurationShort } from '../utils/format.js'
 import { computeSessionDurationMs } from '../utils/stats.js'
 import { toDateInputValue, toTimeInputValue, fromDateAndTime } from '../utils/datetime.js'
+import { validateSegmentForm } from '../utils/segmentEdit.js'
 import { NOTE_MAX_LENGTH } from '../constants.js'
 
 const route = useRoute()
@@ -333,40 +334,27 @@ function closeSegmentModal() {
   addingSegment.value = false
 }
 
-function segmentsOverlap(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && bStart < aEnd
-}
-
 async function saveSegmentModal() {
   const form = editSegmentForm.value
-  const startAt = fromDateAndTime(form.startDate, form.startTime)
-  const endAt = fromDateAndTime(form.endDate, form.endTime)
+  const result = validateSegmentForm({
+    formStartAt: fromDateAndTime(form.startDate, form.startTime),
+    formEndAt: fromDateAndTime(form.endDate, form.endTime),
+    session: session.value,
+    originalSegment: addingSegment.value ? null : editingSegment.value,
+    otherSegments: segments.value.filter((seg) => seg.id !== (editingSegment.value?.id ?? null)),
+  })
+  if (result.error) {
+    showToast(result.error)
+    return
+  }
+  const { startAt, endAt } = result
   if (startAt == null) return
-  const segEnd = endAt ?? startAt
-  if (segEnd <= startAt) {
-    showToast('结束须晚于开始')
-    return
-  }
-  const sessionStart = session.value.startAt
-  const sessionEnd = session.value.endAt ?? Infinity
-  if (startAt < sessionStart || segEnd > sessionEnd) {
-    showToast('须在记录时间范围内')
-    return
-  }
-  const others = segments.value.filter((seg) => seg.id !== (editingSegment.value?.id ?? null))
-  for (const seg of others) {
-    const otherEnd = seg.endAt != null ? seg.endAt : sessionEnd
-    if (segmentsOverlap(startAt, segEnd, seg.startAt, otherEnd)) {
-      showToast('与同条记录内其他段重叠')
-      return
-    }
-  }
   if (addingSegment.value && session.value) {
     await addSegment({
       sessionId: session.value.id,
       projectId: form.projectId || null,
       startAt,
-      endAt: segEnd,
+      endAt,
     })
     closeSegmentModal()
     await load()
@@ -377,7 +365,7 @@ async function saveSegmentModal() {
   await updateSegment(seg.id, {
     projectId: form.projectId || null,
     startAt,
-    endAt: segEnd,
+    endAt,
   })
   closeSegmentModal()
   await load()

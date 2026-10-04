@@ -20,6 +20,13 @@ export function toTimeInputValue(ts) {
 }
 
 /**
+ * 时间戳 -> 向下取整到分钟（表单 input 的时间精度）
+ */
+export function floorToMinute(ts) {
+  return Math.floor(ts / 60000) * 60000
+}
+
+/**
  * date 字符串 (YYYY-MM-DD) + time 字符串 (HH:mm) -> 时间戳
  */
 export function fromDateAndTime(dateStr, timeStr) {
